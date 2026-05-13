@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 const appDir = process.argv[2];
 const translationsPath = process.argv[3] || path.join(__dirname, "..", "translations", "zh-CN.json");
@@ -45,11 +46,19 @@ const regexRules = [
   ["^Search (.+)$", "搜索 $1"],
 ];
 
+const patchFingerprint = crypto
+  .createHash("sha256")
+  .update(JSON.stringify({ dict, regexRules }))
+  .digest("hex")
+  .slice(0, 12);
+const domMarker = `__claudeCoworkZhPatch_${patchFingerprint}`;
+const mainMarker = `__claudeCoworkZhPatchMain_${patchFingerprint}`;
+
 function buildDomPatch() {
   const payload = JSON.stringify({ dict, regexRules });
   return `
 ;(() => {
-  const MARK = "__claudeCoworkZhPatch";
+  const MARK = ${JSON.stringify(domMarker)};
   if (window[MARK]) return;
   try { Object.defineProperty(window, MARK, { value: true, configurable: false }); } catch { window[MARK] = true; }
 
@@ -205,7 +214,7 @@ const domPatch = buildDomPatch();
 
 for (const target of preloadTargets) {
   let content = fs.readFileSync(target, "utf8");
-  if (!content.includes("__claudeCoworkZhPatch")) {
+  if (!content.includes(domMarker)) {
     content += "\n" + domPatch + "\n";
     fs.writeFileSync(target, content, "utf8");
     console.log(`Appended DOM translator to ${target}`);
@@ -215,24 +224,27 @@ for (const target of preloadTargets) {
 }
 
 let index = fs.readFileSync(mainIndex, "utf8");
-if (!index.includes("__claudeCoworkZhPatchMain")) {
+if (!index.includes(mainMarker)) {
   const injections = [
     {
       needle: `YFn(o.webContents),o.webContents.on("dom-ready",()=>{xJ()});`,
-      replacement: `YFn(o.webContents);const __claudeCoworkZhPatchMain=()=>{o.webContents.executeJavaScript(${JSON.stringify(domPatch)},!0).catch(()=>{})};o.webContents.on("dom-ready",()=>{xJ(),__claudeCoworkZhPatchMain()}),o.webContents.on("did-finish-load",__claudeCoworkZhPatchMain);`,
+      replacement: `YFn(o.webContents);const ${mainMarker}=()=>{o.webContents.executeJavaScript(${JSON.stringify(domPatch)},!0).catch(()=>{})};o.webContents.on("dom-ready",()=>{xJ(),${mainMarker}()}),o.webContents.on("did-finish-load",${mainMarker});`,
     },
     {
       needle: `Tm(s.webContents),ccr(s.webContents),s.webContents.on("dom-ready",()=>{poA()});`,
-      replacement: `Tm(s.webContents),ccr(s.webContents);const __claudeCoworkZhPatchMain=()=>{s.webContents.executeJavaScript(${JSON.stringify(domPatch)},!0).catch(()=>{})};s.webContents.on("dom-ready",()=>{poA(),__claudeCoworkZhPatchMain()}),s.webContents.on("did-finish-load",__claudeCoworkZhPatchMain);`,
+      replacement: `Tm(s.webContents),ccr(s.webContents);const ${mainMarker}=()=>{s.webContents.executeJavaScript(${JSON.stringify(domPatch)},!0).catch(()=>{})};s.webContents.on("dom-ready",()=>{poA(),${mainMarker}()}),s.webContents.on("did-finish-load",${mainMarker});`,
     },
   ];
   const injection = injections.find(({ needle }) => index.includes(needle));
-  if (!injection) {
+  if (!injection && !index.includes("__claudeCoworkZhPatchMain")) {
     throw new Error("Main process injection point not found. Claude may have changed its bundle layout.");
+  } else if (!injection) {
+    console.log("Main-process translator from an earlier patch is already present; relying on preload injection for this dictionary update.");
+  } else {
+    index = index.replace(injection.needle, injection.replacement);
+    fs.writeFileSync(mainIndex, index, "utf8");
+    console.log(`Injected main-process translator into ${mainIndex}`);
   }
-  index = index.replace(injection.needle, injection.replacement);
-  fs.writeFileSync(mainIndex, index, "utf8");
-  console.log(`Injected main-process translator into ${mainIndex}`);
 } else {
   console.log(`Main-process translator already present in ${mainIndex}`);
 }
