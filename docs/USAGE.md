@@ -43,7 +43,26 @@ npm install
 
 安装完成后，项目目录下会出现 `node_modules`。这个目录不需要提交到 Git。
 
-## 4. 运行汉化补丁
+## 4. 先做无损环境检查
+
+在真正修改 Claude 文件前，可以先运行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-environment.ps1
+```
+
+它只检查环境，不会修改 Claude。检查内容包括：
+
+- 是否为 Windows。
+- 是否安装 Node.js / npm。
+- 是否已经执行 `npm install`。
+- 是否能找到 WindowsApps 版 Claude Desktop。
+- 是否存在 `Claude.exe`、`app.asar` 和语言 JSON。
+- 当前 PowerShell 是否为管理员权限。
+
+如果输出里有 `FAIL`，先按提示修复，再继续安装。
+
+## 5. 运行汉化补丁
 
 执行：
 
@@ -66,7 +85,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 Windows 可能会弹出 UAC 管理员权限确认，请选择允许。
 
-## 5. 验证是否成功
+## 6. 验证是否成功
 
 Claude 自动重启后，进入 Cowork 页面检查：
 
@@ -83,7 +102,7 @@ Claude 自动重启后，进入 Cowork 页面检查：
 - 设置页：通用、隐私、功能、Claude 代码、协作。
 - 桌面应用设置：开机时运行、系统托盘、保持电脑唤醒。
 
-## 6. 备份位置
+## 7. 备份位置
 
 每次安装都会创建独立备份：
 
@@ -99,7 +118,7 @@ Claude 自动重启后，进入 Cowork 页面检查：
 
 不要手动删除这些备份，除非你确定不需要恢复原版。
 
-## 7. 恢复原版
+## 8. 恢复原版
 
 如果 Claude 无法启动，或者你想回到原版界面，执行：
 
@@ -109,7 +128,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\restore.ps1
 
 恢复脚本会读取 `latest.json`，把最近一次安装前备份的文件写回 Claude 目录，然后重新启动 Claude。
 
-## 8. Claude 更新后怎么办
+## 9. Claude 更新后怎么办
 
 Claude Desktop 自动更新后通常会安装到新的 WindowsApps 版本目录。此时旧补丁不会继续生效，界面可能重新变成英文。
 
@@ -121,7 +140,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 如果新版本修改了前端 bundle 注入点，脚本会提示找不到注入点。这种情况需要维护者适配 `scripts/patch-asar.cjs`。
 
-## 9. 补充遗漏翻译
+## 10. 补充遗漏翻译
 
 如果你发现某个页面仍然有英文，优先编辑：
 
@@ -150,7 +169,7 @@ translations/zh-CN.json
 powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 ```
 
-## 10. 发布前自检
+## 11. 发布前自检
 
 如果你 fork 后准备提交 PR，先执行：
 
@@ -164,7 +183,7 @@ npm run validate
 - Node 脚本是否存在语法错误。
 - 仓库是否误加入 `.asar`、`.exe`、`.bak`、日志等不该发布的文件。
 
-## 11. 常见错误
+## 12. 常见错误
 
 ### 找不到 Claude Desktop
 
@@ -192,7 +211,7 @@ npm install
 
 这通常是 Cowork 远端新下发了文案，或者一句话被拆成多个 DOM 文本节点。补充 `translations/zh-CN.json` 后重新安装即可。
 
-## 12. 安全边界
+## 13. 安全边界
 
 本项目会修改本机应用安装目录，因此请只从你信任的仓库运行脚本。仓库不会上传或收集你的 Claude 会话、账号、项目文件或本地配置。
 

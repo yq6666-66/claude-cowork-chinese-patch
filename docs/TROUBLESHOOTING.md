@@ -22,6 +22,16 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 WindowsApps 目录需要管理员权限写入。安装脚本会尝试自动提权；如果 UAC 没弹出，可以手动以管理员身份打开 PowerShell 后执行安装命令。
 
+## 不确定这台电脑能不能安装
+
+先运行无损检查：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-environment.ps1
+```
+
+它不会修改 Claude，只会检查 Node.js、npm、`@electron/asar`、Claude WindowsApps 路径和关键文件是否存在。
+
 ## 部分页面仍有英文
 
 常见原因：

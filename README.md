@@ -19,6 +19,12 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 
 完整步骤请看：[详细使用教程](docs/USAGE.md)。
 
+也可以先做无损环境检查：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-environment.ps1
+```
+
 ## 功能
 
 - 将 Cowork 首页、侧边栏、任务入口、项目入口等常见文案改为中文。
@@ -43,6 +49,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\install.ps1
 │   ├── update-locale.cjs           # 补丁语言 JSON
 │   ├── get-asar-header-hash.cjs    # 计算 Electron 使用的 ASAR header hash
 │   ├── patch-exe-hash.cjs          # 写回 Claude.exe 中的完整性哈希
+│   ├── check-environment.ps1       # 无损环境检查
 │   └── validate-release.cjs        # 发布前检查
 ├── translations/
 │   └── zh-CN.json                  # 中文翻译表
