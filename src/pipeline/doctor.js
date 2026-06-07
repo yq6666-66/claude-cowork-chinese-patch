@@ -1,0 +1,90 @@
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { archiveContainsText } = require("../core/asar");
+const { computeHeaderHash, readExeHashes } = require("../core/integrity");
+const { locateClaude } = require("../core/locate");
+
+function defaultStateRoot() {
+  return path.join(process.env.USERPROFILE || os.homedir(), ".claude-cowork-zh-patch");
+}
+
+function readLatest(stateRoot = defaultStateRoot()) {
+  const latestPath = path.join(stateRoot, "latest.json");
+  if (!fs.existsSync(latestPath)) return null;
+  return JSON.parse(fs.readFileSync(latestPath, "utf8"));
+}
+
+function markerFor(latest) {
+  const fingerprint = latest && (latest.patchFingerprint || latest.fingerprint);
+  return fingerprint ? `__claudeCoworkZhPatch_${fingerprint}` : "__claudeCoworkZhPatch";
+}
+
+function asarContains(asarPath, marker) {
+  return archiveContainsText(asarPath, marker, [
+    ".vite/build/mainView.js",
+    ".vite/build/mainWindow.js",
+    ".vite/build/index.js",
+  ]);
+}
+
+function diagnose(options = {}) {
+  const latest = options.latest || readLatest(options.stateRoot);
+  if (!latest) {
+    return {
+      status: "needs-install",
+      code: 2,
+      reason: "latest.json not found",
+    };
+  }
+
+  const appDir = options.appDir || latest.appDir || latest.app;
+  const located = locateClaude({ explicitDir: appDir });
+  const currentHeaderHash = computeHeaderHash(located.asarPath);
+  const exeHashes = readExeHashes(located.exePath);
+  const exeHasCurrentHash = exeHashes.some((entry) => entry.hash === currentHeaderHash);
+  const marker = markerFor(latest);
+  const hasMarker = asarContains(located.asarPath, marker);
+
+  if (!exeHasCurrentHash) {
+    return {
+      status: "broken",
+      code: 1,
+      reason: "Claude.exe ASAR header hash does not match current app.asar",
+      app: located,
+      currentHeaderHash,
+      marker,
+      hasMarker,
+    };
+  }
+
+  if ((latest.bundleFingerprint && latest.bundleFingerprint !== located.bundleFingerprint) || !hasMarker) {
+    return {
+      status: "needs-repatch",
+      code: 2,
+      reason: latest.bundleFingerprint && latest.bundleFingerprint !== located.bundleFingerprint
+        ? "Claude bundle fingerprint changed"
+        : "patch marker missing or outdated",
+      app: located,
+      currentHeaderHash,
+      marker,
+      hasMarker,
+    };
+  }
+
+  return {
+    status: "healthy",
+    code: 0,
+    reason: "patch marker and ASAR integrity hash look healthy",
+    app: located,
+    currentHeaderHash,
+    marker,
+    hasMarker,
+  };
+}
+
+module.exports = {
+  defaultStateRoot,
+  diagnose,
+  readLatest,
+};

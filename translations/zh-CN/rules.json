@@ -1,0 +1,170 @@
+[
+  {
+    "pattern": "^You(?:'|\\u2019)?re running Claude through your organization(?:'|\\u2019)?s own inference provider \\((.+)\\)\\. Your conversations are sent there, not to Anthropic, and are governed by your organization(?:'|\\u2019)?s agreement with that provider\\.$",
+    "replace": "你正在通过组织自己的推理服务提供方 ($1) 运行 Claude。你的对话会发送到该提供方，而不是 Anthropic，并受组织与该提供方之间协议的约束。",
+    "priority": 100,
+    "note": "third-party inference provider banner"
+  },
+  {
+    "pattern": "^(.+[\\u4e00-\\u9fff].*) safely\\.$",
+    "replace": "$1。",
+    "priority": 80,
+    "note": "finish mixed Chinese safety sentence"
+  },
+  {
+    "pattern": "^(\\d+) minutes? ago$",
+    "replace": "$1 分钟前",
+    "priority": 60,
+    "note": "relative minutes"
+  },
+  {
+    "pattern": "^(\\d+) hours? ago$",
+    "replace": "$1 小时前",
+    "priority": 60,
+    "note": "relative hours"
+  },
+  {
+    "pattern": "^(\\d+) days? ago$",
+    "replace": "$1 天前",
+    "priority": 60,
+    "note": "relative days"
+  },
+  {
+    "pattern": "^(\\d+) files?$",
+    "replace": "$1 个文件",
+    "priority": 55,
+    "note": "file count"
+  },
+  {
+    "pattern": "^(\\d+) folders?$",
+    "replace": "$1 个文件夹",
+    "priority": 55,
+    "note": "folder count"
+  },
+  {
+    "pattern": "^(\\d+) projects?$",
+    "replace": "$1 个项目",
+    "priority": 55,
+    "note": "project count"
+  },
+  {
+    "pattern": "^(\\d+) tasks?$",
+    "replace": "$1 个任务",
+    "priority": 55,
+    "note": "task count"
+  },
+  {
+    "pattern": "^(\\d+) messages?$",
+    "replace": "$1 条消息",
+    "priority": 55,
+    "note": "message count"
+  },
+  {
+    "pattern": "^Ran (\\d+) commands?$",
+    "replace": "运行了 $1 条命令",
+    "priority": 54,
+    "note": "activity command count"
+  },
+  {
+    "pattern": "^Used (\\d+) tools?$",
+    "replace": "使用了 $1 个工具",
+    "priority": 54,
+    "note": "activity tool count"
+  },
+  {
+    "pattern": "^Used (\\d+) tools, created a file$",
+    "replace": "使用了 $1 个工具，并创建了一个文件",
+    "priority": 54,
+    "note": "activity tools and file status"
+  },
+  {
+    "pattern": "^Ran (\\d+) commands?, used (\\d+) tools?$",
+    "replace": "运行了 $1 条命令，使用了 $2 个工具",
+    "priority": 54,
+    "note": "activity command and tool count"
+  },
+  {
+    "pattern": "^Created (\\d+) memories, created a file$",
+    "replace": "创建了 $1 条记忆，并创建了一个文件",
+    "priority": 54,
+    "note": "activity memory and file status"
+  },
+  {
+    "pattern": "^(.+) selected$",
+    "replace": "已选择 $1",
+    "priority": 50,
+    "note": "selection status"
+  },
+  {
+    "pattern": "^Open (.+) in Browser$",
+    "replace": "在浏览器中打开 $1",
+    "priority": 45,
+    "note": "open in browser action"
+  },
+  {
+    "pattern": "^Delete (.+)$",
+    "replace": "删除 $1",
+    "priority": 40,
+    "note": "delete action"
+  },
+  {
+    "pattern": "^Create (.+)$",
+    "replace": "创建 $1",
+    "priority": 40,
+    "note": "create action"
+  },
+  {
+    "pattern": "^New (.+)$",
+    "replace": "新建 $1",
+    "priority": 40,
+    "note": "new action"
+  },
+  {
+    "pattern": "^Search (.+)$",
+    "replace": "搜索 $1",
+    "priority": 40,
+    "note": "search action"
+  },
+  {
+    "pattern": "^More options for (.+)$",
+    "replace": "$1 的更多选项",
+    "priority": 42,
+    "note": "more options menu"
+  },
+  {
+    "pattern": "^Browse (.+)$",
+    "replace": "浏览 $1",
+    "priority": 42,
+    "note": "browse action"
+  },
+  {
+    "pattern": "^(.+) have moved to$",
+    "replace": "$1 已迁移到",
+    "priority": 42,
+    "note": "partial moved notice"
+  },
+  {
+    "pattern": "^(.+) font family$",
+    "replace": "$1 字体系列",
+    "priority": 42,
+    "note": "mixed font family label"
+  },
+  {
+    "pattern": "^(.+) font$",
+    "replace": "$1 字体",
+    "priority": 41,
+    "note": "mixed font label"
+  },
+  {
+    "pattern": "^(.+) appearance$",
+    "replace": "$1 外观",
+    "priority": 41,
+    "note": "mixed appearance label"
+  },
+  {
+    "pattern": "^Persist (.+) sessions$",
+    "replace": "保留$1会话",
+    "priority": 41,
+    "note": "mixed persist sessions label"
+  }
+]

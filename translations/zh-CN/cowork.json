@@ -1,0 +1,16 @@
+{
+  "Let's knock something off your list": "一起完成你的待办事项",
+  "How can I help you today?": "我能帮你做什么？",
+  "Work in a project": "在项目中工作",
+  "Pick a task, any task": "选一个任务开始",
+  "Optimize my week": "优化我的一周",
+  "Organize my screenshots": "整理我的截图",
+  "Find insights in files": "从文件中发现信息",
+  "Initial greeting": "初始问候",
+  "Response completions": "回复完成通知",
+  "Get notified when Claude has finished a response. Useful for long-running tasks.": "Claude 完成回复时通知你。适用于耗时较长的任务。",
+  "Generate code, documents, and designs in a dedicated window alongside your conversation.": "在对话旁边的专用窗口中生成代码、文档和设计。",
+  "Claude saves what it learns about you and your work during Cowork sessions. These files are stored on this device.": "Claude 会保存它在协作会话中了解到的关于你和你工作的内容。这些文件存储在此设备上。",
+  "Claude completed response notifications": "Claude 回复完成通知",
+  "Claude has finished a response. Useful for long-running tasks.": "Claude 已完成回复。适用于耗时较长的任务。"
+}
