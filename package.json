@@ -1,17 +1,30 @@
 {
   "name": "claude-cowork-zh-patch",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Windows Claude Desktop / Cowork Chinese UI patcher.",
   "type": "commonjs",
   "private": false,
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "install-patch": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1",
     "check-env": "powershell -ExecutionPolicy Bypass -File scripts/check-environment.ps1",
     "restore": "powershell -ExecutionPolicy Bypass -File scripts/restore.ps1",
-    "validate": "node scripts/validate-release.cjs"
+    "doctor": "node scripts/doctor.cjs",
+    "locate": "node scripts/locate-doctor.cjs",
+    "inspect-bundle": "node scripts/inspect-bundle.cjs",
+    "validate": "node scripts/validate-release.cjs",
+    "collect-missing": "node scripts/collect-missing.cjs",
+    "coverage": "node -e \"require('./src/translate/coverage').report({})\"",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
-    "@electron/asar": "^3.4.1"
+    "vitest": "4.1.8"
+  },
+  "dependencies": {
+    "@electron/asar": "3.4.1"
   }
 }

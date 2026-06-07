@@ -31,7 +31,9 @@ if ($isAdmin) {
 
 $hasNode = Test-Command "node"
 $nodeVersion = if ($hasNode) { (node -v) } else { "node not found" }
-Write-Check "Node.js" $hasNode $nodeVersion
+$nodeMajor = if ($hasNode -and $nodeVersion -match "^v(\d+)\.") { [int]$Matches[1] } else { 0 }
+$nodeOk = $hasNode -and $nodeMajor -ge 20
+Write-Check "Node.js >=20" $nodeOk $nodeVersion
 
 $hasNpm = Test-Command "npm"
 $npmVersion = if ($hasNpm) { (npm -v) } else { "npm not found" }
@@ -42,7 +44,8 @@ Write-Check "@electron/asar" $hasAsar $(if ($hasAsar) { $asarBin } else { "Run n
 
 $claudeApps = @()
 if (Test-Path -LiteralPath $windowsApps) {
-  $claudeApps = Get-ChildItem -LiteralPath $windowsApps -Directory -Filter "Claude_*__pzs8sxrjxfjjc" -ErrorAction SilentlyContinue |
+  $claudeApps = Get-ChildItem -LiteralPath $windowsApps -Directory -Filter "Claude_*__*" -ErrorAction SilentlyContinue |
+    Where-Object { $_.Name -match "^Claude_.*__[a-z0-9]+$" } |
     Where-Object { Test-Path (Join-Path $_.FullName "app\resources\app.asar") } |
     Sort-Object LastWriteTime -Descending
 }
@@ -53,7 +56,7 @@ if ($claudeFound) {
 } elseif (-not $isAdmin) {
   Write-Check "Claude WindowsApps install" $true "Not visible from this non-admin shell. Rerun as administrator if Claude is installed but not detected." "WARN"
 } else {
-  Write-Check "Claude WindowsApps install" $false "Expected C:\Program Files\WindowsApps\Claude_*__pzs8sxrjxfjjc\app"
+  Write-Check "Claude WindowsApps install" $false "Expected C:\Program Files\WindowsApps\Claude_*__<publisher>\app"
 }
 
 if ($claudeFound) {
@@ -73,7 +76,7 @@ Write-Host "State directory:"
 Write-Host $stateRoot
 
 Write-Host ""
-if ($isWindows -and $hasNode -and $hasNpm -and $hasAsar -and ($claudeFound -or -not $isAdmin)) {
+if ($isWindows -and $nodeOk -and $hasNpm -and $hasAsar -and ($claudeFound -or -not $isAdmin)) {
   Write-Host "Result: this computer looks ready enough to try install.ps1. For certainty, rerun this check as administrator."
   exit 0
 }

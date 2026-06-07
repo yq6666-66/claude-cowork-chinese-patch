@@ -1,5 +1,4 @@
-const crypto = require("crypto");
-const asar = require("@electron/asar");
+const { computeHeaderHash } = require("../src/core/integrity");
 
 const archive = process.argv[2];
 if (!archive) {
@@ -7,6 +6,4 @@ if (!archive) {
   process.exit(1);
 }
 
-const raw = asar.getRawHeader(archive);
-const hash = crypto.createHash("sha256").update(raw.headerString).digest("hex");
-console.log(hash);
+console.log(computeHeaderHash(archive));

@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { spawnSync } = require("child_process");
+const { defaultDir, validate: validateDictionary } = require("../src/translate/dictionary");
 
 const root = path.resolve(__dirname, "..");
 const forbiddenExtensions = new Set([".asar", ".exe", ".bak", ".tmp", ".log"]);
@@ -10,6 +11,14 @@ const scripts = [
   "scripts/update-locale.cjs",
   "scripts/patch-exe-hash.cjs",
   "scripts/get-asar-header-hash.cjs",
+  "scripts/collect-missing.cjs",
+  "scripts/create-backup.cjs",
+  "scripts/doctor.cjs",
+  "scripts/inspect-bundle.cjs",
+  "scripts/locate-doctor.cjs",
+  "scripts/resolve-app-dir.cjs",
+  "scripts/restore-backup.cjs",
+  "scripts/run-install.cjs",
   "scripts/validate-release.cjs",
 ];
 
@@ -34,16 +43,31 @@ try {
   const count = Object.keys(parsed).length;
   if (count < 50) fail(`Translation table looks too small: ${count} entries`);
   else console.log(`Translation table OK: ${count} entries`);
+
+  const dictionaryResult = validateDictionary({ source: defaultDir });
+  if (!dictionaryResult.ok) fail(`Split dictionary validation failed: ${JSON.stringify(dictionaryResult.errors)}`);
+  else console.log(`Split dictionary OK: ${defaultDir}`);
 } catch (error) {
   fail(`Cannot parse translations/zh-CN.json: ${error.message}`);
 }
 
-for (const script of scripts) {
-  const result = spawnSync(process.execPath, ["--check", path.join(root, script)], {
+const syntaxTargets = [
+  ...scripts.map((script) => path.join(root, script)),
+  ...walk(path.join(root, "src")).filter((file) => /\.(cjs|js)$/.test(file)),
+];
+
+for (const target of syntaxTargets) {
+  const result = spawnSync(process.execPath, ["--check", target], {
     encoding: "utf8",
   });
-  if (result.status !== 0) fail(`Syntax check failed for ${script}\n${result.stderr || result.stdout}`);
-  else console.log(`Syntax OK: ${script}`);
+  const rel = path.relative(root, target).replace(/\\/g, "/");
+  if (result.status !== 0) fail(`Syntax check failed for ${rel}\n${result.stderr || result.stdout}`);
+  else console.log(`Syntax OK: ${rel}`);
+}
+
+const gitignore = fs.readFileSync(path.join(root, ".gitignore"), "utf8");
+for (const required of ["*.asar", "*.exe", "*.bak", "_missing.json", "logs/"]) {
+  if (!gitignore.includes(required)) fail(`.gitignore missing required pattern: ${required}`);
 }
 
 for (const file of walk(root)) {
