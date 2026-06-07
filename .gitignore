@@ -4,7 +4,10 @@ node_modules/
 *.asar
 *.bak
 *.exe
+_missing.json
 dist/
 work/
 backups/
+logs/
+.claude-cowork-zh-patch/
 *.tmp
