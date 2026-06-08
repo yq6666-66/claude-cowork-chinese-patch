@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.0.2
+
+- 修复工作区启动失败提示的混合中英文显示，覆盖 `Failed to start Claude's workspace`、`reinstall the workspace` 以及已被片段替换后的 `工作区` 变体。
+- 新增规则测试，避免 workspace 错误标题和重装链接再次退化成半英文半中文。
+
 ## 2.0.1
 
 - 修复运行时翻译范围过宽的问题：跳过 message/prose/markdown/tool-result 等正文容器，避免误处理 Claude 对话、模型输出和工具输出正文。

@@ -12,6 +12,16 @@ const rules = [
   { pattern: "^Delete (.+)$", replace: "删除 $1", priority: 5 },
   { pattern: "^New (.+)$", replace: "新建 $1", priority: 5 },
   { pattern: "^Open (.+) in Browser$", replace: "在浏览器中打开 $1", priority: 5 },
+  {
+    pattern: "^Failed to start Claude(?:'|\\u2019|’)?s (?:workspace|工作区)$",
+    replace: "无法启动 Claude 的工作区",
+    priority: 90,
+  },
+  {
+    pattern: "^reinstall the (?:workspace|工作区)$",
+    replace: "重新安装工作区",
+    priority: 88,
+  },
 ];
 
 test("normalizes whitespace and restores original edge spacing", () => {
@@ -84,6 +94,13 @@ test("does not fragment-replace inside longer English words", () => {
       discovery: "发现",
     },
   })).toBe("Model 发现");
+});
+
+test("translates workspace startup failure without mixed English", () => {
+  expect(translate("Failed to start Claude's workspace", { dict: {}, rules })).toBe("无法启动 Claude 的工作区");
+  expect(translate("Failed to start Claude’s 工作区", { dict: {}, rules })).toBe("无法启动 Claude 的工作区");
+  expect(translate("reinstall the workspace", { dict: {}, rules })).toBe("重新安装工作区");
+  expect(translate("reinstall the 工作区", { dict: {}, rules })).toBe("重新安装工作区");
 });
 
 test("translateBody returns null when nothing should change", () => {

@@ -174,6 +174,24 @@
     "note": "server retry countdown"
   },
   {
+    "pattern": "^Failed to start Claude(?:'|\\u2019|’)?s (?:workspace|工作区)$",
+    "replace": "无法启动 Claude 的工作区",
+    "priority": 90,
+    "note": "workspace startup failure title"
+  },
+  {
+    "pattern": "^Restarting Claude or your computer may fix this issue\\. If the problem persists, you can reinstall the (?:workspace|工作区)\\.$",
+    "replace": "重启 Claude 或电脑可能会解决此问题。如果问题仍然存在，你可以重新安装工作区。",
+    "priority": 90,
+    "note": "workspace startup failure help text"
+  },
+  {
+    "pattern": "^reinstall the (?:workspace|工作区)$",
+    "replace": "重新安装工作区",
+    "priority": 88,
+    "note": "workspace reinstall link"
+  },
+  {
     "pattern": "^Can't reach (.+)$",
     "replace": "无法连接 $1",
     "priority": 55,

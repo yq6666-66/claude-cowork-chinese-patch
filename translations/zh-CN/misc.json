@@ -170,5 +170,11 @@
   "Show less": "收起",
   "The provider didn't respond. Check your network or VPN, then try again.": "提供方没有响应。请检查网络或 VPN，然后重试。",
   "Writing…": "正在写入…",
-  "Reading file…": "正在读取文件…"
+  "Reading file…": "正在读取文件…",
+  "Failed to start Claude's workspace": "无法启动 Claude 的工作区",
+  "Failed to start Claude’s workspace": "无法启动 Claude 的工作区",
+  "Restarting Claude or your computer may fix this issue. If the problem persists, you can reinstall the workspace.": "重启 Claude 或电脑可能会解决此问题。如果问题仍然存在，你可以重新安装工作区。",
+  "Restarting Claude or your computer may fix this issue. If the problem persists, you can": "重启 Claude 或电脑可能会解决此问题。如果问题仍然存在，你可以",
+  "reinstall the workspace": "重新安装工作区",
+  "reinstall the 工作区": "重新安装工作区"
 }
