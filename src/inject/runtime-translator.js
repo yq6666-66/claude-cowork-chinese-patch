@@ -49,6 +49,21 @@ function buildRuntimeScript({ dict = {}, rules = [], protectedWords, marker } = 
     .map((rule) => [new RegExp(rule.pattern), rule.replace]);
   const attrs = ["placeholder", "title", "aria-label", "alt", "data-tooltip", "data-title", "data-label"];
   const skipSelector = "script,style,code,pre,textarea,kbd,samp,[contenteditable='true'],[data-cowork-zh-no-translate]";
+  const userContentSelector = [
+    "[data-message-author-role]",
+    "[data-testid*='message']",
+    "[data-testid*='conversation']",
+    "[data-testid*='transcript']",
+    "[data-testid*='artifact']",
+    "[data-testid*='tool-result']",
+    "[class*='markdown']",
+    "[class*='Markdown']",
+    "[class*='prose']",
+    "[class*='Prose']",
+    "[class*='message-content']",
+    "[class*='MessageContent']",
+  ].join(",");
+  const interactiveSelector = "button,a,label,summary,select,input,[role='button'],[role='menuitem'],[role='tab'],[role='checkbox'],[role='radio'],[aria-label]";
   const escapeRegExp = (value) => String(value).replace(/[|\\\\{}()[\\]^$+*?.]/g, "\\\\$&");
   const protectedWords = new RegExp((payload.protectedWords || []).map(escapeRegExp).join("|"), "g");
   const translatedNodes = new WeakSet();
@@ -108,6 +123,7 @@ function buildRuntimeScript({ dict = {}, rules = [], protectedWords, marker } = 
   function shouldSkipElement(element) {
     if (!element || element.nodeType !== 1) return false;
     if (element.closest(skipSelector)) return true;
+    if (element.closest(userContentSelector) && !element.closest(interactiveSelector)) return true;
     return Boolean(element.closest("[role='textbox'], .cm-editor, .monaco-editor"));
   }
 

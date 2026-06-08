@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.0.1
+
+- 修复运行时翻译范围过宽的问题：跳过 message/prose/markdown/tool-result 等正文容器，避免误处理 Claude 对话、模型输出和工具输出正文。
+- 强化未命中采集过滤，排除 `.mjs`、`.css` 文件名、工具状态片段和模型回复片段，避免污染 `translations/_missing.json`。
+- 补充 agent mode、本地工作区、文件夹选择、下载、重试、Explorer 操作等实机 UI 文案。
+- 新增测试覆盖运行时正文跳过规则和缺词噪声过滤。
+
 ## 2.0.0
 
 - 新增 `src/` 分层：core、inject、translate、pipeline。

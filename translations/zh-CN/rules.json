@@ -166,5 +166,23 @@
     "replace": "保留$1会话",
     "priority": 41,
     "note": "mixed persist sessions label"
+  },
+  {
+    "pattern": "^Server is busy\\. Retrying in (\\d+)s \\(attempt (\\d+) of (\\d+)\\)$",
+    "replace": "服务器繁忙，将在 $1 秒后重试（第 $2/$3 次）",
+    "priority": 70,
+    "note": "server retry countdown"
+  },
+  {
+    "pattern": "^Can't reach (.+)$",
+    "replace": "无法连接 $1",
+    "priority": 55,
+    "note": "local service unavailable"
+  },
+  {
+    "pattern": "^Expand folder (.+)$",
+    "replace": "展开文件夹 $1",
+    "priority": 45,
+    "note": "folder expand action"
   }
 ]

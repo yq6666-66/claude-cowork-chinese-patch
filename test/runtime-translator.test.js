@@ -9,6 +9,8 @@ test("builds parseable runtime script with marker and payload", () => {
 
   expect(script).toContain("__test_marker");
   expect(script).toContain("WeakSet");
+  expect(script).toContain("data-message-author-role");
+  expect(script).toContain("tool-result");
   expect(script).not.toContain("setInterval");
   expect(() => new Function(script)).not.toThrow();
 });

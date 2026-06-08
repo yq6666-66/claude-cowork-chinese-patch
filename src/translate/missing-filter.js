@@ -20,6 +20,7 @@ function shouldSkipMissing(text) {
     "github mcp",
     "github ✓",
     "memory",
+    "mem",
     "node_repl",
     "pat",
     "playwright mcp",
@@ -27,9 +28,13 @@ function shouldSkipMissing(text) {
     "powershell",
     "powershell code",
     "remove",
+    "reading",
+    "request",
+    "result",
     "semgrep",
     "sequentialthinking",
     "server-everything",
+    "script",
     "sources:",
     "sqlite mcp",
     "time",
@@ -58,13 +63,15 @@ function shouldSkipMissing(text) {
   if (/\b(?:awesome-mcp-servers|postgres-mcp|playwright-mcp|servers\/src\/time|modelcontextprotocol\/servers)\b/i.test(value)) return true;
   if (/^[a-z0-9_.-]+\/[a-z0-9_.-]+(?:\s+\([^)]+\))?$/i.test(value)) return true;
 
-  if (/^(?:[\w.-]+|\d+_image)\.(?:asar|bak|cjs|exe|gif|jpeg|jpg|js|json|log|mcp\.json|md|png|ps1|sqlite(?:-(?:shm|wal))?|svg|ts|tsx|webp|ya?ml)$/i.test(value)) return true;
-  if (/\.(?:asar|bak|cjs|exe|gif|jpeg|jpg|js|json|log|mcp\.json|md|png|ps1|sqlite(?:-(?:shm|wal))?|svg|ts|tsx|webp|ya?ml)(?:\b|$)/i.test(value)) return true;
+  if (/^(?:[\w.-]+|\d+_image)\.(?:asar|bak|cjs|css|exe|gif|jpeg|jpg|js|json|log|mcp\.json|md|mjs|png|ps1|sqlite(?:-(?:shm|wal))?|svg|ts|tsx|webp|ya?ml)$/i.test(value)) return true;
+  if (/\.(?:asar|bak|cjs|css|exe|gif|jpeg|jpg|js|json|log|mcp\.json|md|mjs|png|ps1|sqlite(?:-(?:shm|wal))?|svg|ts|tsx|webp|ya?ml)(?:\b|$)/i.test(value)) return true;
   if (/\b(?:npm|git status|README|WindowsApps|app\.asar|install\.ps1|restore\.ps1|patch-asar|latest\.json)\b/i.test(value)) return true;
 
   if (/\b(?:Phase|P\d+\.\d+|M\d+|N\d+|S\d+)\b/.test(value)) return true;
   if (/(?:rename session|preload|buildDir|bundle|needle|asar|exe hash)/i.test(value)) return true;
-  if (/^(?:Claude responded:|You said:|I(?:'|\u2019|鈥檤)?(?: am | have |'ve |\u2019ve |鈥檝e |'ll |\u2019ll |鈥檒l )|Let me |Now I|Now let me |Now the |Before I|First,|The good news:|Happy to |To point you |A "what needs)/.test(value)) return true;
+  if (/^(?:Claude responded:|You said:|I(?:'|\u2019|鈥檤)?(?: am | have |'ve |\u2019ve |鈥檝e |'ll |\u2019ll |鈥檒l )|Let me |Now I|Now let me |Now the |Before I|First,|The good news:|Happy to |To point you |A "what needs|Bash is down|Workspace bash is down)/.test(value)) return true;
+  if (/^(?:Read|Reading)\s+[\w.-]+\.(?:cjs|css|js|json|md|mjs|ps1|ts|tsx|ya?ml)\u2026?$/i.test(value)) return true;
+  if (/^(?:Searched \d+ patterns?|Found files|Finding files|Searching files\u2026?|Still thinking\.\.\.)$/i.test(value)) return true;
   if (/^(?:Set up a scheduled task that gives me|Which tools should this status page pull from|translation layer, patches locale JSON|Access to this website is blocked by your network egress settings)/.test(value)) return true;
   if (/^Summarize my calendar and inbox for the day$/i.test(value)) return true;
 
