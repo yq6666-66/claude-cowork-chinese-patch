@@ -28,6 +28,16 @@ workspace VM compatibility: preserved
 doctor: 健康 / workspace-safe external locale patch is installed
 ```
 
+## 汉化模式选择
+
+| 模式 | 命令 | 会修改 | 适合场景 | 风险 |
+| --- | --- | --- | --- | --- |
+| 安全模式（默认） | `npm run install-patch` | 外置 locale / `ion-dist` i18n JSON | 需要 Claude 工作区、VM、插件和 Skills 页面稳定可用 | 覆盖率取决于本地 i18n JSON 和词表命中 |
+| 危险完整注入模式 | `npm run install-patch -- --force-unsafe-asar` | `resources/app.asar` 和 `Claude.exe` ASAR header hash | 暂时不使用工作区，只追求更高可见文案覆盖 | 可能导致 `HashMismatch`、`signature verification failed`、`RPC pipe closed` |
+| 恢复原版 | `npm run restore` | 从最近一次备份恢复 | Claude 无法启动、工作区异常、需要回到官方文件 | 需要备份记录和备份文件完整 |
+
+建议优先使用默认安全模式。这个模式不会重写 `Claude.exe`，也不会把运行时脚本注入到 `ion-dist/assets/v1/index-*.js`，因此不会因为补丁本身删除插件、Skills 或破坏工作区启动链路。
+
 ## 功能亮点
 
 - 默认安全模式中文化 Claude 桌面 locale 和 `ion-dist` 前端 i18n 文件，不破坏 `Claude.exe` 签名。
@@ -38,6 +48,17 @@ doctor: 健康 / workspace-safe external locale patch is installed
 - `restore` 可从最近一次备份恢复原版 Claude 文件。
 - `collect-missing` 可在危险完整注入模式下从运行时日志提取未命中文案，方便持续补词。
 - 不提交、不下载、不保存任何 Claude 二进制产物到仓库。
+
+## 插件和 Skills 汉化说明
+
+v2.0.3 的默认安全模式会优先覆盖 Claude 本地 i18n JSON 中已经存在的插件、连接器、MCP servers、Desktop Extensions、Skills 入口和常见操作文案。新增的 `translations/zh-CN/ion-residual.json` 用来补齐 `ion-dist` 中容易残留的半中半英文案，例如连接器列表、创建 Skills、计划任务和状态提示。
+
+需要注意：
+
+- 默认安全模式只更新本地可发现的 i18n JSON，不会改写第三方插件包、远端下发的插件元数据或 Skills 原始定义。
+- 如果某个插件或 Skill 的描述来自远端接口，且没有落在本地 `ion-dist` i18n JSON 中，安全模式可能无法直接覆盖这段描述。
+- 补丁不会删除、隐藏或重建插件与 Skills；如果安装后插件或 Skills 消失，优先执行 `npm run restore` 恢复官方文件，再运行默认 `npm run install-patch`。
+- 危险完整注入模式的运行时 DOM 翻译覆盖面更高，但它会修改 `Claude.exe` 签名链路。需要 Claude 工作区可用时，不建议使用该模式。
 
 ## 支持范围
 
