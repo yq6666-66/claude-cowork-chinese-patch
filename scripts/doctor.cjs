@@ -16,6 +16,7 @@ try {
     console.log(`App: ${result.app.appDir}`);
     console.log(`ASAR: ${result.app.asarPath}`);
     console.log(`Header hash: ${result.currentHeaderHash}`);
+    if (result.mode) console.log(`Mode: ${result.mode}`);
   }
   process.exitCode = result.code;
 } catch (error) {

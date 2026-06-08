@@ -45,6 +45,30 @@ function fileRecord(file) {
   };
 }
 
+function discoverLocaleTargets(resourcesDir) {
+  const candidates = [
+    ["desktop.en-US", path.join(resourcesDir, "en-US.json")],
+    ["desktop.zh-CN", path.join(resourcesDir, "zh-CN.json")],
+    ["ion.en-US", path.join(resourcesDir, "ion-dist", "i18n", "en-US.json")],
+    ["ion.zh-CN", path.join(resourcesDir, "ion-dist", "i18n", "zh-CN.json")],
+    ["statsig.en-US", path.join(resourcesDir, "ion-dist", "i18n", "statsig", "en-US.json")],
+    ["statsig.zh-CN", path.join(resourcesDir, "ion-dist", "i18n", "statsig", "zh-CN.json")],
+  ];
+
+  return candidates
+    .map(([id, file]) => ({ id, file }))
+    .filter((target) => fs.existsSync(target.file));
+}
+
+function localeTempFile(tempDir, target) {
+  return path.join(tempDir, "locales", `${target.id}.json`);
+}
+
+function localeFileRecord(target) {
+  const record = fileRecord(target.file);
+  return record ? { id: target.id, ...record } : null;
+}
+
 function assertStep(options, step) {
   if (options.failAt === step) throw new Error(`Injected install failure at ${step}`);
 }
@@ -80,6 +104,19 @@ function readLatest(stateRoot) {
 
 function markerForFingerprint(fingerprint) {
   return fingerprint ? `__claudeCoworkZhPatch_${fingerprint}` : null;
+}
+
+function unsafeAsarRequested(options) {
+  const mode = String(options.mode || "").toLowerCase();
+  return Boolean(
+    options.forceUnsafeAsar ||
+    options.unsafeAsar ||
+    options.forceUnsafe ||
+    mode === "unsafe-asar" ||
+    mode === "unsafe" ||
+    mode === "full" ||
+    mode === "asar"
+  );
 }
 
 function reusableBackupForCurrentPatch({ app, stateRoot }) {
@@ -138,17 +175,27 @@ async function runInstall(options = {}) {
   const dictionaryDir = options.dictionaryDir || path.join(repoDir, "translations", "zh-CN");
   const backupRoot = options.backupRoot || path.join(stateRoot, "backups");
   const workRoot = options.workRoot || path.join(os.tmpdir(), "claude-cowork-zh-patch");
+  const installMode = unsafeAsarRequested(options) ? "unsafe-asar" : "safe";
   let backupDir = null;
+  let replacedAnyFile = false;
 
   try {
     const locateStep = logger.step ? logger.step("locate") : null;
     const app = locateClaude({ explicitDir: options.appDir });
     if (locateStep) locateStep.ok({ appDir: app.appDir });
 
+    if (installMode === "safe" && anyPatchMarkerExistsInArchive(app.asarPath)) {
+      throw new Error("Existing unsafe ASAR patch detected. Run `npm run restore` before installing the workspace-safe external locale patch.");
+    }
+
     const resourcesDir = path.dirname(app.asarPath);
     const enLocale = path.join(resourcesDir, "en-US.json");
     const zhLocale = path.join(resourcesDir, "zh-CN.json");
-    const backupFiles = [app.exePath, app.asarPath, enLocale, zhLocale].filter((file) => fs.existsSync(file));
+    const localeTargets = discoverLocaleTargets(resourcesDir);
+    const backupFiles = (installMode === "safe"
+      ? localeTargets.map((target) => target.file)
+      : [app.exePath, app.asarPath, ...localeTargets.map((target) => target.file)]
+    ).filter((file) => fs.existsSync(file));
 
     const backupStep = logger.step ? logger.step("backup") : null;
     const backupResult = reusableBackupForCurrentPatch({ app, stateRoot }) || backup.createBackup(backupFiles, { backupRoot, runId });
@@ -159,8 +206,6 @@ async function runInstall(options = {}) {
     const tempDir = path.join(workRoot, runId, "temp");
     const patchedAsar = path.join(tempDir, "app.asar");
     const patchedExe = path.join(tempDir, "Claude.exe");
-    const patchedEnLocale = path.join(tempDir, "en-US.json");
-    const patchedZhLocale = path.join(tempDir, "zh-CN.json");
     fs.rmSync(path.join(workRoot, runId), { recursive: true, force: true });
     fs.mkdirSync(tempDir, { recursive: true });
 
@@ -169,6 +214,89 @@ async function runInstall(options = {}) {
       throw new Error(`Dictionary validation failed: ${JSON.stringify(dictionaryValidation.errors)}`);
     }
     const dictionary = loadDictionary({ source: fs.existsSync(dictionaryDir) ? dictionaryDir : defaultDir });
+
+    const localeStep = logger.step ? logger.step("locale") : null;
+    const localeResults = [];
+    const localeWork = localeTargets.map((target) => ({
+      ...target,
+      tempFile: localeTempFile(tempDir, target),
+    }));
+    const externalRuntimeResults = [];
+
+    for (const target of localeWork) {
+      copyIfExists(target.file, target.tempFile);
+      const result = updateLocaleFile(target.tempFile, dictionary);
+      localeResults.push({
+        ...result,
+        id: target.id,
+        file: target.file,
+        tempFile: target.tempFile,
+      });
+    }
+    if (localeStep) localeStep.ok({ mode: installMode, locales: localeResults });
+
+    if (installMode === "safe") {
+      if (localeWork.length === 0) {
+        throw new Error("No external locale JSON files found to patch in safe mode.");
+      }
+
+      assertStep(options, "self-check");
+      const selfCheckStep = logger.step ? logger.step("self-check") : null;
+      if (!localeResults.some((entry) => entry && !entry.skipped)) {
+        throw new Error("Safe mode did not find an external locale JSON file to update.");
+      }
+      if (selfCheckStep) selfCheckStep.ok({ mode: installMode });
+
+      const replaceStep = logger.step ? logger.step("replace") : null;
+      for (const target of localeWork) {
+        await copyFileWithRetry(target.tempFile, target.file, options.copyRetry);
+        replacedAnyFile = true;
+      }
+      if (replaceStep) replaceStep.ok({ mode: installMode });
+
+      const currentAsarHeaderHash = computeHeaderHash(app.asarPath);
+      const localeFileRecords = localeTargets.map(localeFileRecord).filter(Boolean);
+      const latest = {
+        app: app.appDir,
+        appDir: app.appDir,
+        version: app.version,
+        mode: installMode,
+        workspaceSafe: true,
+        bundleFingerprint: sha256(app.asarPath).slice(0, 16),
+        patchFingerprint: null,
+        backup: backupDir,
+        backupManifest: backupResult.manifestPath,
+        asarHeaderHash: currentAsarHeaderHash,
+        localeResults,
+        externalRuntimeResults,
+        files: {
+          exe: fileRecord(app.exePath),
+          asar: fileRecord(app.asarPath),
+          enLocale: fileRecord(enLocale),
+          zhLocale: fileRecord(zhLocale),
+          locales: localeFileRecords,
+          externalRuntime: [],
+        },
+        installedAt: new Date().toISOString(),
+      };
+      const latestPath = path.join(stateRoot, "latest.json");
+      fs.mkdirSync(path.dirname(latestPath), { recursive: true });
+      fs.writeFileSync(latestPath, `${JSON.stringify(latest, null, 2)}\n`, "utf8");
+
+      if (logger.flush) logger.flush();
+      return {
+        ok: true,
+        mode: installMode,
+        app,
+        backupDir,
+        latestPath,
+        marker: null,
+        patchFingerprint: null,
+        asarHeaderHash: currentAsarHeaderHash,
+        localeResults,
+        externalRuntimeResults,
+      };
+    }
 
     const extractStep = logger.step ? logger.step("extract") : null;
     asar.extract(app.asarPath, workDir);
@@ -185,14 +313,6 @@ async function runInstall(options = {}) {
       logger,
     });
     if (injectStep) injectStep.ok({ marker: injection.marker, mainWarning: injection.main.warning });
-
-    const localeStep = logger.step ? logger.step("locale") : null;
-    const localeResults = [];
-    const enCopy = copyIfExists(enLocale, patchedEnLocale);
-    const zhCopy = copyIfExists(zhLocale, patchedZhLocale);
-    if (enCopy) localeResults.push(updateLocaleFile(enCopy, dictionary));
-    if (zhCopy) localeResults.push(updateLocaleFile(zhCopy, dictionary));
-    if (localeStep) localeStep.ok({ locales: localeResults });
 
     assertStep(options, "pack");
     const packStep = logger.step ? logger.step("pack") : null;
@@ -225,25 +345,35 @@ async function runInstall(options = {}) {
 
     const replaceStep = logger.step ? logger.step("replace") : null;
     await copyFileWithRetry(patchedAsar, app.asarPath, options.copyRetry);
-    if (enCopy) await copyFileWithRetry(patchedEnLocale, enLocale, options.copyRetry);
-    if (zhCopy) await copyFileWithRetry(patchedZhLocale, zhLocale, options.copyRetry);
+    replacedAnyFile = true;
+    for (const target of localeWork) {
+      await copyFileWithRetry(target.tempFile, target.file, options.copyRetry);
+      replacedAnyFile = true;
+    }
     await copyFileWithRetry(patchedExe, app.exePath, options.copyRetry);
+    replacedAnyFile = true;
     if (replaceStep) replaceStep.ok();
 
+    const localeFileRecords = localeTargets.map(localeFileRecord).filter(Boolean);
     const latest = {
       app: app.appDir,
       appDir: app.appDir,
       version: app.version,
+      mode: installMode,
+      workspaceSafe: false,
       bundleFingerprint: sha256(app.asarPath).slice(0, 16),
       patchFingerprint: injection.fingerprint,
       backup: backupDir,
       backupManifest: backupResult.manifestPath,
       asarHeaderHash,
+      externalRuntimeResults,
       files: {
         exe: fileRecord(app.exePath),
         asar: fileRecord(app.asarPath),
         enLocale: fileRecord(enLocale),
         zhLocale: fileRecord(zhLocale),
+        locales: localeFileRecords,
+        externalRuntime: [],
       },
       installedAt: new Date().toISOString(),
     };
@@ -254,16 +384,18 @@ async function runInstall(options = {}) {
     if (logger.flush) logger.flush();
     return {
       ok: true,
+      mode: installMode,
       app,
       backupDir,
       latestPath,
       marker: injection.marker,
       patchFingerprint: injection.fingerprint,
       asarHeaderHash,
+      externalRuntimeResults,
     };
   } catch (error) {
     let restoreResult = null;
-    if (backupDir) {
+    if (backupDir && (installMode !== "safe" || replacedAnyFile)) {
       try {
         restoreResult = backup.restoreFrom(backupDir);
       } catch (restoreError) {

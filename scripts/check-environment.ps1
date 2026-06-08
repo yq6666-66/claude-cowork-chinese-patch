@@ -65,10 +65,14 @@ if ($claudeFound) {
   $asar = Join-Path $app "resources\app.asar"
   $enLocale = Join-Path $app "resources\en-US.json"
   $zhLocale = Join-Path $app "resources\zh-CN.json"
+  $ionEnLocale = Join-Path $app "resources\ion-dist\i18n\en-US.json"
+  $statsigEnLocale = Join-Path $app "resources\ion-dist\i18n\statsig\en-US.json"
   Write-Check "Claude.exe" (Test-Path -LiteralPath $exe) $exe
   Write-Check "app.asar" (Test-Path -LiteralPath $asar) $asar
   Write-Check "en-US locale" (Test-Path -LiteralPath $enLocale) $enLocale
   Write-Check "zh-CN locale" (Test-Path -LiteralPath $zhLocale) $zhLocale
+  Write-Check "ion i18n en-US" (Test-Path -LiteralPath $ionEnLocale) $ionEnLocale
+  Write-Check "statsig i18n en-US" (Test-Path -LiteralPath $statsigEnLocale) $statsigEnLocale
 }
 
 Write-Host ""
