@@ -44,7 +44,20 @@ async function createFixture(root) {
   fs.writeFileSync(path.join(appDir, "Claude.exe"), `prefix-${knownHashes[0]}-suffix`, "ascii");
   writeJson(path.join(resources, "en-US.json"), { greeting: "Hello" });
   writeJson(path.join(resources, "zh-CN.json"), { greeting: "Hello" });
-  writeJson(path.join(dictionaryDir, "misc.json"), { Hello: "你好" });
+  fs.mkdirSync(path.join(resources, "ion-dist", "assets", "v1"), { recursive: true });
+  fs.writeFileSync(
+    path.join(resources, "ion-dist", "index.html"),
+    '<!doctype html><script type="module" crossorigin src="/assets/v1/index-test.js"></script>',
+    "utf8"
+  );
+  fs.writeFileSync(path.join(resources, "ion-dist", "assets", "v1", "index-test.js"), "console.log('ion');", "utf8");
+  writeJson(path.join(resources, "ion-dist", "i18n", "en-US.json"), { settings: "Open settings" });
+  writeJson(path.join(resources, "ion-dist", "i18n", "statsig", "en-US.json"), { chat: "New chat" });
+  writeJson(path.join(dictionaryDir, "misc.json"), {
+    Hello: "你好",
+    "Open settings": "打开设置",
+    "New chat": "新聊天",
+  });
   writeJson(path.join(dictionaryDir, "rules.json"), []);
   writeJson(path.join(dictionaryDir, "protected.json"), ["Claude", "GitHub", "MCP"]);
 
@@ -59,6 +72,9 @@ async function createFixture(root) {
     asarPath: path.join(resources, "app.asar"),
     enLocale: path.join(resources, "en-US.json"),
     zhLocale: path.join(resources, "zh-CN.json"),
+    ionEnLocale: path.join(resources, "ion-dist", "i18n", "en-US.json"),
+    statsigEnLocale: path.join(resources, "ion-dist", "i18n", "statsig", "en-US.json"),
+    ionRuntime: path.join(resources, "ion-dist", "assets", "v1", "index-test.js"),
   };
 }
 
@@ -72,6 +88,7 @@ test("runInstall replaces online files only after temp self-check succeeds", asy
     workRoot: fixture.workRoot,
     logger: nullLogger(),
     runId: "ok",
+    forceUnsafeAsar: true,
   });
 
   expect(result.ok).toBe(true);
@@ -80,6 +97,40 @@ test("runInstall replaces online files only after temp self-check succeeds", asy
   expect(readExeHashes(fixture.exePath).some((entry) => entry.hash === result.asarHeaderHash)).toBe(true);
 
   expect(asarOps.archiveContainsText(fixture.asarPath, result.marker, [".vite/build/mainView.js"])).toBe(true);
+});
+
+test("runInstall defaults to workspace-safe locale patch without touching exe or asar", async () => {
+  const fixture = await createFixture(tempDir("claude-zh-install-safe-"));
+  const beforeAsar = fs.readFileSync(fixture.asarPath);
+  const beforeExe = fs.readFileSync(fixture.exePath);
+
+  const result = await runInstall({
+    appDir: fixture.appDir,
+    repoDir: fixture.repoDir,
+    stateRoot: fixture.stateRoot,
+    workRoot: fixture.workRoot,
+    logger: nullLogger(),
+    runId: "safe",
+  });
+
+  const latest = JSON.parse(fs.readFileSync(result.latestPath, "utf8"));
+  expect(result.mode).toBe("safe");
+  expect(latest.mode).toBe("safe");
+  expect(latest.workspaceSafe).toBe(true);
+  expect(fs.readFileSync(fixture.asarPath)).toEqual(beforeAsar);
+  expect(fs.readFileSync(fixture.exePath)).toEqual(beforeExe);
+  expect(JSON.parse(fs.readFileSync(fixture.enLocale, "utf8"))).toEqual({ greeting: "你好" });
+  expect(JSON.parse(fs.readFileSync(fixture.ionEnLocale, "utf8"))).toEqual({ settings: "打开设置" });
+  expect(JSON.parse(fs.readFileSync(fixture.statsigEnLocale, "utf8"))).toEqual({ chat: "新聊天" });
+  expect(fs.readFileSync(fixture.ionRuntime, "utf8")).toBe("console.log('ion');");
+  expect(latest.files.locales.map((entry) => entry.id)).toEqual([
+    "desktop.en-US",
+    "desktop.zh-CN",
+    "ion.en-US",
+    "statsig.en-US",
+  ]);
+  expect(latest.files.externalRuntime).toEqual([]);
+  expect(asarOps.archiveContainsText(fixture.asarPath, "__claudeCoworkZhPatch_", [".vite/build/mainView.js"])).toBe(false);
 });
 
 test.each(["pack", "self-check"])("runInstall restores online files when %s fails", async (failAt) => {
@@ -98,6 +149,7 @@ test.each(["pack", "self-check"])("runInstall restores online files when %s fail
       logger: nullLogger(),
       runId: failAt,
       failAt,
+      forceUnsafeAsar: true,
     });
   } catch (error) {
     thrown = error;
@@ -121,6 +173,7 @@ test("runInstall reuses the original backup when installing over an existing pat
     workRoot: fixture.workRoot,
     logger: nullLogger(),
     runId: "first",
+    forceUnsafeAsar: true,
   });
   const firstLatest = JSON.parse(fs.readFileSync(first.latestPath, "utf8"));
 
@@ -131,6 +184,7 @@ test("runInstall reuses the original backup when installing over an existing pat
     workRoot: fixture.workRoot,
     logger: nullLogger(),
     runId: "second",
+    forceUnsafeAsar: true,
   });
   const secondLatest = JSON.parse(fs.readFileSync(second.latestPath, "utf8"));
 
@@ -154,6 +208,7 @@ test("runInstall recovers when ASAR changed but exe still has previous patch has
     workRoot: fixture.workRoot,
     logger: nullLogger(),
     runId: "first",
+    forceUnsafeAsar: true,
   });
   const firstHeaderHash = first.asarHeaderHash;
 
@@ -172,6 +227,7 @@ test("runInstall recovers when ASAR changed but exe still has previous patch has
     workRoot: fixture.workRoot,
     logger: nullLogger(),
     runId: "recover",
+    forceUnsafeAsar: true,
   });
 
   expect(recovered.backupDir).toBe(first.backupDir);

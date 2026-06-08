@@ -11,6 +11,7 @@
 - 计划任务页：空状态、Keep awake、电脑唤醒提示。
 - 第三方推理与 Gateway 配置中的常见字段。
 - 个人资料、职业下拉、全局指令、记忆、本地会话等常见设置。
+- `ion-dist` 外置前端 i18n 中的高频按钮、空状态、支付、项目、侧边栏和 Claude Code 文案。
 
 ## v2 词表
 
@@ -21,6 +22,7 @@
 - `cowork.json`：首页、欢迎语、推荐任务、占位文案。
 - `connectors.json`：连接器、插件、技能、计划任务相关入口。
 - `misc.json`：暂时无法明确归类的词条。
+- `ion-residual.json`：安全外置 i18n 模式下容易出现的半中半英文案修正。
 - `rules.json`：正则规则，例如时间、数量、动态操作文案。
 - `protected.json`：保护词，例如 `Claude`、`MCP`、`GitHub`。
 

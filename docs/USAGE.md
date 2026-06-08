@@ -42,20 +42,24 @@ npm run check-env
 npm run install-patch
 ```
 
-脚本会尝试自提权。弹出 UAC 时选择允许。
+脚本会尝试自提权。弹出 UAC 时选择允许。默认安装 workspace-safe external locale 补丁，只更新外置 i18n JSON，不修改 `Claude.exe` 和 `resources/app.asar`。
 
 主要步骤：
 
 1. 查找 Claude Desktop 安装目录。
 2. 停止正在运行的 Claude。
-3. 备份 `Claude.exe`、`resources/app.asar` 和 locale JSON。
-4. 解包 `app.asar`。
-5. 从 `translations/zh-CN/` 加载分域词表。
-6. 注入运行时翻译器。
-7. 更新 `en-US.json` / `zh-CN.json`。
-8. 重新打包 `app.asar`。
-9. 计算 ASAR header hash 并写回 `Claude.exe`。
-10. 写入 `latest.json` 并重启 Claude。
+3. 备份 `Claude.exe`、`resources/app.asar` 和可发现的外置 i18n JSON。
+4. 从 `translations/zh-CN/` 加载分域词表。
+5. 更新 `resources\en-US.json`、`resources\zh-CN.json`（如果存在）、`resources\ion-dist\i18n\en-US.json` 和 `resources\ion-dist\i18n\statsig\en-US.json`（如果存在）。
+6. 写入 `latest.json` 并重启 Claude。
+
+如果你明确接受 Claude 工作区 VM 可能因为 exe 签名失效而无法启动，可以启用危险完整注入模式：
+
+```powershell
+npm run install-patch -- --force-unsafe-asar
+```
+
+危险模式会额外解包 `app.asar`、注入运行时翻译器、重新打包、计算 ASAR header hash 并写回 `Claude.exe`。当前需要工作区功能时不建议使用。
 
 ## 5. 验证
 
@@ -69,6 +73,12 @@ Claude 重启后检查：
 
 ```powershell
 npm run doctor
+```
+
+默认安全安装的健康输出会包含：
+
+```text
+Mode: safe
 ```
 
 ## 6. Claude 更新后
@@ -111,8 +121,10 @@ npm run restore
 
 ```powershell
 $env:COWORK_ZH_COLLECT="1"
-npm run install-patch
+npm run install-patch -- --force-unsafe-asar
 ```
+
+采集依赖运行时翻译器注入，只在危险完整注入模式下可用。采集完成后如需恢复工作区兼容性，执行 `npm run restore`，再运行默认安全安装。
 
 提取本地日志中的未命中：
 
@@ -158,10 +170,26 @@ C:\Program Files\WindowsApps\Claude_*__pzs8sxrjxfjjc\app
 
 ```powershell
 npm run restore
-npm run install-patch
 npm run doctor
 ```
 
+恢复后用默认安全模式重新安装：
+
+```powershell
+npm run install-patch
+```
+
+### 无法启动 Claude 的工作区
+
+如果日志里有 `signature verification failed: client executable is not signed` 或 `RPC pipe closed`，通常是旧版完整注入写坏了 `Claude.exe` 签名。先恢复原版：
+
+```powershell
+npm run restore
+npm run doctor
+```
+
+确认 `Claude.exe` 签名恢复后，再运行默认安全安装，不要使用 `--force-unsafe-asar`。
+
 ### 部分英文没有翻译
 
-这通常是远端新文案、第三方插件 UI，或带占位符的动态模板。按第 8 节补词。
+这通常是默认安全模式无法覆盖的 bundle 文案、远端新文案、第三方插件 UI，或带占位符的动态模板。优先补 locale 词表；确实需要运行时覆盖时再短时间使用危险完整注入采集。

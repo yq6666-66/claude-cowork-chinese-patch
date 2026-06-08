@@ -3,7 +3,7 @@ const os = require("os");
 const path = require("path");
 const asarOps = require("../src/core/asar");
 const { computeHeaderHash, knownHashes, writeExeHash } = require("../src/core/integrity");
-const { appInfo } = require("../src/core/locate");
+const { appInfo, sha256 } = require("../src/core/locate");
 const { diagnose } = require("../src/pipeline/doctor");
 
 function tempDir(prefix) {
@@ -72,6 +72,45 @@ test("doctor reports needs-repatch when marker is missing", async () => {
   );
 
   expect(diagnose({ stateRoot }).status).toBe("needs-repatch");
+});
+
+test("doctor reports healthy for workspace-safe locale patch", async () => {
+  const root = tempDir("claude-zh-doctor-safe-");
+  const stateRoot = path.join(root, "state");
+  const appDir = await createClaudeFixture(root, { marker: "no-current-marker" });
+  const enLocale = path.join(appDir, "resources", "en-US.json");
+  const ionLocale = path.join(appDir, "resources", "ion-dist", "i18n", "en-US.json");
+  fs.writeFileSync(enLocale, JSON.stringify({ greeting: "你好" }), "utf8");
+  fs.mkdirSync(path.dirname(ionLocale), { recursive: true });
+  fs.writeFileSync(ionLocale, JSON.stringify({ settings: "打开设置" }), "utf8");
+  fs.mkdirSync(stateRoot);
+  fs.writeFileSync(
+    path.join(stateRoot, "latest.json"),
+    JSON.stringify({
+      appDir,
+      mode: "safe",
+      bundleFingerprint: appInfo(appDir).bundleFingerprint,
+      files: {
+        locales: [
+          {
+            id: "desktop.en-US",
+            path: enLocale,
+            sha256: sha256(enLocale),
+          },
+          {
+            id: "ion.en-US",
+            path: ionLocale,
+            sha256: sha256(ionLocale),
+          },
+        ],
+      },
+    }),
+    "utf8"
+  );
+
+  const result = diagnose({ stateRoot });
+  expect(result.status).toBe("healthy");
+  expect(result.mode).toBe("safe");
 });
 
 test("doctor reports broken when exe hash does not match asar header", async () => {

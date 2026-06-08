@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.3
+
+- 默认安装切换为 workspace-safe external locale 模式，更新 `resources/en-US.json`、`resources/zh-CN.json`（如果存在）以及 `resources/ion-dist/i18n` 下可发现的外置前端 i18n JSON，不再修改 `Claude.exe` 或 `resources/app.asar`。
+- 移除未验证可用的 `NODE_OPTIONS` 运行时启动路径，默认安装后直接正常启动 Claude。
+- 保留旧完整 ASAR 注入能力，但必须显式传入 `--force-unsafe-asar`；文档明确标记该模式会破坏 Authenticode 签名并可能导致工作区 VM `RPC pipe closed`。
+- `doctor` 新增安全模式识别，按所有外置 i18n 文件状态和 bundle 指纹判断健康状态。
+- 安装脚本默认只申请外置 i18n 写权限，降低 WindowsApps 安装目录的改动范围。
+
 ## 2.0.2
 
 - 修复工作区启动失败提示的混合中英文显示，覆盖 `Failed to start Claude's workspace`、`reinstall the workspace` 以及已被片段替换后的 `工作区` 变体。

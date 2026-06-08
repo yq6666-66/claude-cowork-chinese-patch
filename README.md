@@ -2,39 +2,41 @@
 
 [![CI](https://github.com/yq6666-66/claude-cowork-chinese-patch/actions/workflows/ci.yml/badge.svg)](https://github.com/yq6666-66/claude-cowork-chinese-patch/actions/workflows/ci.yml)
 
-这是一个面向 Windows 版 Claude Desktop / Cowork 的中文界面补丁器。它通过本地备份、解包、注入运行时翻译层、更新 locale 文件、重新打包和修正 ASAR 完整性 hash，让 Claude Desktop 的高频 Cowork 界面文案显示为简体中文。
+这是一个面向 Windows 版 Claude Desktop / Cowork 的中文界面补丁器。默认使用 **workspace-safe external locale 模式**：更新 Claude 外置 locale / `ion-dist` i18n JSON，不修改 `Claude.exe` 和 `resources/app.asar`，优先保证 Claude 工作区 / VM 能正常启动。
 
 项目不会分发 Claude、`app.asar`、`Claude.exe` 或任何修改后的二进制文件。所有修改都只发生在你的本机 Claude Desktop 安装目录中，并且会在安装前创建可校验备份。
 
 > 非官方项目。使用前请确认你理解它会修改本机 Claude Desktop 的安装文件。Claude 自动更新后通常需要重新运行补丁。
+>
+> 重要：旧版“完整 ASAR 注入”会写入 `Claude.exe` 中的 ASAR header hash。当前 Claude MSIX / WindowsApps 的工作区 VM 会校验 `Claude.exe` 的 Authenticode 签名，写入 exe 会让签名变成 `HashMismatch`，从而触发 `signature verification failed` 和 `RPC pipe closed`。因此 v2.0.3 起默认不再修改 exe。
 
 ## 当前状态
 
-- 当前版本：`2.0.0`
+- 当前版本：`2.0.3`
 - 主要支持：Microsoft Store / WindowsApps 版 Claude Desktop / Cowork
 - 已实机验证：Claude `1.11187.4.0`
-- 词表覆盖：`translations/zh-CN/` 分域词表，`635` 条词典项，`28` 条正则规则
+- 词表覆盖：`translations/zh-CN/` 分域词表，`810` 条词典项，`34` 条正则规则
 - 自动化检查：Vitest、发布校验、词表覆盖率、GitHub Actions CI
 
-v2.0.0 实机安装验证记录：
+v2.0.3 当前默认策略：
 
 ```text
-patchFingerprint: 9982f154b1b1
-asarHeaderHash: e71085edff044bf18472d2a179d7012e90758c8a2f2bce86d7f60ffea76f4ac8
-doctor: 健康
-exeHasCurrent: true
-main bundle injection count: 1
+mode: safe
+modifies Claude.exe: false
+modifies app.asar: false
+workspace VM compatibility: preserved
+doctor: 健康 / workspace-safe external locale patch is installed
 ```
 
 ## 功能亮点
 
-- 中文化 Cowork 首页、侧边栏、设置、连接器、MCP servers、Desktop Extensions、组织限制、Gateway、模型发现、usage limits、egress requirements 等高频页面。
-- 运行时翻译器支持完整句匹配、正则模板和短片段补全，能处理部分混合中英文节点。
-- 支持 `preload` 必注入和 main process 尽力注入，降低 Claude 小版本更新后补丁失效概率。
-- 安装前自动备份 `Claude.exe`、`resources/app.asar`、`en-US.json` 和 `zh-CN.json`。
-- `doctor` 可检查补丁 marker、ASAR header hash 和 `Claude.exe` 完整性状态。
+- 默认安全模式中文化 Claude 桌面 locale 和 `ion-dist` 前端 i18n 文件，不破坏 `Claude.exe` 签名。
+- 保留旧版完整 ASAR 注入能力，但必须显式启用 `--force-unsafe-asar`。
+- 运行时翻译器仍可用于危险模式，支持完整句匹配、正则模板和短片段补全。
+- 安装前自动备份 `Claude.exe`、`resources/app.asar` 以及可发现的外置 i18n JSON。
+- `doctor` 可识别安全模式和危险 ASAR 模式，检查补丁状态、bundle 指纹和所有 locale 文件状态。
 - `restore` 可从最近一次备份恢复原版 Claude 文件。
-- `collect-missing` 可从运行时日志提取未命中文案，方便持续补词。
+- `collect-missing` 可在危险完整注入模式下从运行时日志提取未命中文案，方便持续补词。
 - 不提交、不下载、不保存任何 Claude 二进制产物到仓库。
 
 ## 支持范围
@@ -80,7 +82,7 @@ npm run check-env
 npm run install-patch
 ```
 
-执行 `npm run install-patch` 时如果弹出 UAC，请选择允许。安装完成后 Claude 会自动重新启动。
+执行 `npm run install-patch` 时如果弹出 UAC，请选择允许。默认安装的是 workspace-safe external locale 补丁，安装完成后 Claude 会自动重新启动。
 
 安装后建议运行：
 
@@ -88,13 +90,13 @@ npm run install-patch
 npm run doctor
 ```
 
-如果输出为 `健康`，说明补丁 marker 和 ASAR 完整性 hash 状态正常。
+如果输出为 `健康` 且 `Mode: safe`，说明当前是不会破坏工作区 VM 的安全安装。
 
 ## 常用命令
 
 ```powershell
 npm run check-env       # 无损环境检查，不修改 Claude
-npm run install-patch   # 安装中文补丁，会备份、注入、打包、修正 hash 并重启 Claude
+npm run install-patch   # 安装安全中文补丁，只更新外置 i18n JSON，不修改 Claude.exe/app.asar
 npm run doctor          # 检查当前补丁状态
 npm run restore         # 从最近一次备份恢复原版
 npm run inspect-bundle  # 只读检查真实 app.asar 的 bundle 结构和注入点
@@ -104,28 +106,46 @@ npm test                # 运行单元测试
 npm run validate        # 发布前校验词表、脚本和源码语法
 ```
 
+危险完整注入模式仅用于你明确接受“工作区 VM 可能失败”的场景：
+
+```powershell
+npm run install-patch -- --force-unsafe-asar
+```
+
 `doctor` 状态含义：
 
-- `健康`：补丁 marker 存在，`Claude.exe` 中的 ASAR header hash 与当前 `app.asar` 匹配。
-- `需重打`：Claude 更新、补丁 marker 缺失或当前安装文件已变化，需要重新运行 `npm run install-patch`。
+- `健康`：安全模式下 locale 文件状态匹配，或危险模式下 marker/hash 匹配。
+- `需重打`：Claude 更新、locale 文件变化、补丁 marker 缺失或当前安装文件已变化，需要重新运行 `npm run install-patch`。
 - `异常`：完整性 hash 不匹配，建议先 `npm run restore`，再重新安装。
 - `需安装`：没有找到本项目的 `latest.json` 安装记录。
 
 ## 安装流程说明
 
-`npm run install-patch` 会按顺序执行：
+默认 `npm run install-patch` 会按顺序执行：
 
 1. 定位 Claude Desktop 安装目录。
 2. 停止正在运行的 Claude 进程。
-3. 备份 `Claude.exe`、`resources/app.asar`、`en-US.json` 和 `zh-CN.json`。
-4. 解包 `app.asar` 到本地工作目录。
-5. 从 `translations/zh-CN/` 加载分域词表、正则规则和保护词。
-6. 向 Claude bundle 注入运行时翻译器。
-7. 更新 locale JSON。
-8. 重新打包 `app.asar`。
-9. 计算新的 ASAR header hash，并写回 `Claude.exe`。
-10. 运行自检，写入 `%USERPROFILE%\.claude-cowork-zh-patch\latest.json`。
-11. 重启 Claude。
+3. 备份 `Claude.exe`、`resources/app.asar` 以及可发现的外置 i18n JSON。
+4. 从 `translations/zh-CN/` 加载分域词表、正则规则和保护词。
+5. 更新 `resources\en-US.json`、`resources\zh-CN.json`（如果存在）、`resources\ion-dist\i18n\en-US.json` 和 `resources\ion-dist\i18n\statsig\en-US.json`（如果存在）。
+6. 运行自检，写入 `%USERPROFILE%\.claude-cowork-zh-patch\latest.json`。
+7. 重启 Claude。
+
+只有显式 `--force-unsafe-asar` 时，才会额外执行解包 `app.asar`、注入运行时翻译器、重新打包、计算 ASAR header hash 并写回 `Claude.exe`。该模式覆盖率更高，但会破坏 Authenticode 签名，当前不推荐给需要 Claude 工作区的人使用。
+
+## 为什么安全模式覆盖率低于旧版完整汉化
+
+早期版本的“几乎完整汉化”依赖完整 ASAR 注入：补丁会把运行时翻译器写进 Claude 的 preload / main bundle，页面加载后直接扫描 DOM 并翻译可见文案。这条路径覆盖率高，但必须修改 `resources/app.asar`，随后还要把新的 ASAR header hash 写回 `Claude.exe` 才能通过 Electron 自身完整性检查。
+
+当前 Claude Workspace VM 会校验 `Claude.exe` 的 Authenticode 签名。只要写过 exe，签名状态就会变成 `HashMismatch`，VM 会拒绝启动。因此默认安全模式改为只更新外置 i18n JSON，尤其是 `resources\ion-dist\i18n\en-US.json`。这能保住工作区功能，但只能覆盖这些 JSON 中存在且词表可命中的文案。
+
+如果你只追求最高汉化覆盖、暂时不使用 Claude 工作区，可以继续使用：
+
+```powershell
+npm run install-patch -- --force-unsafe-asar
+```
+
+如果你需要工作区可用，就使用默认 `npm run install-patch`，并继续把旧版完整汉化中高频可见文案迁移到 `translations/zh-CN/`。
 
 备份目录：
 
@@ -167,6 +187,7 @@ v2 将词表拆分在 `translations/zh-CN/`：
 - `connectors.json`：连接器、插件、MCP servers、Desktop Extensions。
 - `misc.json`：无法稳定归类但需要覆盖的通用词条。
 - `s4-collected.json`：实机 S4 采样过程中补充的高频词条。
+- `ion-residual.json`：安全外置 i18n 模式下 `ion-dist` 易残留的半中半英文案修正。
 - `rules.json`：动态数量、时间、操作类文案的正则规则。
 - `protected.json`：保护词，例如 `Claude`、`MCP`、`GitHub`、模型名和品牌名。
 
@@ -186,11 +207,11 @@ v2 将词表拆分在 `translations/zh-CN/`：
 
 ## 补充遗漏翻译
 
-运行时未命中采集默认关闭。需要收集遗漏文案时，先开启采集模式再重新安装：
+运行时未命中采集默认关闭，并且依赖完整 ASAR 注入。需要收集遗漏文案时，先开启采集模式，并临时使用危险完整注入：
 
 ```powershell
 $env:COWORK_ZH_COLLECT="1"
-npm run install-patch
+npm run install-patch -- --force-unsafe-asar
 ```
 
 然后在 Claude 中打开高频页面，例如首页、侧边栏、设置各子页、连接器、计划任务、自定义、技能、第三方推理和个人资料下拉。采样后运行：
@@ -201,6 +222,8 @@ npm run coverage
 ```
 
 确认译文后，把词条加入 `translations/zh-CN/` 对应文件。动态句子、数量、时间和带变量的操作文案优先加入 `rules.json`。
+
+采集完成后，如果你需要 Claude 工作区功能，执行 `npm run restore`，再运行默认 `npm run install-patch` 回到 workspace-safe 模式。
 
 提交前至少运行：
 
@@ -237,10 +260,16 @@ npm run install-patch
 npm run doctor
 ```
 
-如果出现完整性错误：
+如果出现完整性错误、`signature verification failed`、`RPC pipe closed` 或 `无法启动 Claude 的工作区`：
 
 ```powershell
 npm run restore
+npm run doctor
+```
+
+确认恢复为官方文件后，再运行默认安全安装：
+
+```powershell
 npm run install-patch
 npm run doctor
 ```
@@ -256,6 +285,8 @@ npm run restore
 ## 已知限制
 
 - Claude 远端新下发的文案可能不在当前词表中，需要继续补词。
+- 默认安全模式只能覆盖外置 i18n JSON 中存在的文案，覆盖率低于完整 ASAR 注入。
+- 完整 ASAR 注入会修改 `Claude.exe`，在当前 Claude MSIX 工作区 VM 上可能导致 `RPC pipe closed`，需要工作区时不要使用。
 - 第三方插件自己的 UI 不一定由 Claude bundle 统一渲染，覆盖率取决于实际 DOM。
 - 系统原生菜单、Chromium 内置错误页、模型生成的对话内容不属于补丁目标。
 - Claude bundle 结构大改时，可能需要更新 `src/inject/` 的注入点发现逻辑。

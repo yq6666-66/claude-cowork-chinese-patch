@@ -36,10 +36,12 @@ npm run coverage
 
 ```powershell
 $env:CLAUDE_ZH_COLLECT_MISSING="1"
-npm run install-patch
+npm run install-patch -- --force-unsafe-asar
 npm run collect-missing
 npm run coverage
 ```
+
+采集依赖运行时翻译器注入，属于危险完整 ASAR 模式。采集完成后，如需继续使用 Claude 工作区，请先 `npm run restore`，再运行默认 `npm run install-patch`。
 
 `translations/_missing.json` 仅用于本地补词，已被 `.gitignore` 忽略。确认译文后，把词条移动到对应分域 JSON。
 
@@ -47,8 +49,9 @@ npm run coverage
 
 如果 Claude 更新后补丁失效：
 
-1. 运行 `npm run doctor` 判断是升级、marker 缺失还是完整性错误。
-2. 检查 `.vite/build/mainView.js`、`.vite/build/mainWindow.js`、`.vite/build/index.js`。
-3. 如果 preload 文件名变化，调整 `src/inject/inject-bundle.js`。
-4. 如果 main 注入结构变化，补充 `src/inject/locate-hooks.js` 测试后再改实现。
-5. 如果完整性 hash 无法写回，把当前版本原始 64 位 ASAR hash 加到 `src/core/integrity.js`。
+1. 运行 `npm run doctor` 判断是升级、locale 文件变化、marker 缺失还是完整性错误。
+2. 默认安全模式优先补 `translations/zh-CN/` 和 locale 覆盖，不改 `app.asar`。
+3. 只有适配危险完整注入时，才检查 `.vite/build/mainView.js`、`.vite/build/mainWindow.js`、`.vite/build/index.js`。
+4. 如果 preload 文件名变化，调整 `src/inject/inject-bundle.js`。
+5. 如果 main 注入结构变化，补充 `src/inject/locate-hooks.js` 测试后再改实现。
+6. 如果危险模式完整性 hash 无法写回，把当前版本原始 64 位 ASAR hash 加到 `src/core/integrity.js`。

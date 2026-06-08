@@ -34,11 +34,17 @@ $resources = Join-Path $app "resources"
 $asar = Join-Path $resources "app.asar"
 $enLocale = Join-Path $resources "en-US.json"
 $zhLocale = Join-Path $resources "zh-CN.json"
+$ionI18n = Join-Path $resources "ion-dist\i18n"
+$ionEnLocale = Join-Path $ionI18n "en-US.json"
+$ionZhLocale = Join-Path $ionI18n "zh-CN.json"
+$statsigI18n = Join-Path $ionI18n "statsig"
+$statsigEnLocale = Join-Path $statsigI18n "en-US.json"
+$statsigZhLocale = Join-Path $statsigI18n "zh-CN.json"
 
 Get-Process | Where-Object { $_.ProcessName -ieq "claude" } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
-foreach ($target in @($exe, $asar, $enLocale, $zhLocale, $resources)) {
+foreach ($target in @($exe, $asar, $resources, $enLocale, $zhLocale, $ionI18n, $ionEnLocale, $ionZhLocale, $statsigI18n, $statsigEnLocale, $statsigZhLocale)) {
   if (Test-Path -LiteralPath $target) { Grant-WriteAccess $target }
 }
 
