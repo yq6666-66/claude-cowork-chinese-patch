@@ -56,7 +56,8 @@ $statsigI18n = Join-Path $ionI18n "statsig"
 $statsigEnLocale = Join-Path $statsigI18n "en-US.json"
 $statsigZhLocale = Join-Path $statsigI18n "zh-CN.json"
 
-Get-Process | Where-Object { $_.ProcessName -ieq "claude" } | Stop-Process -Force -ErrorAction SilentlyContinue
+# Only stop the WindowsApps desktop Claude; spare the npm Claude Code CLI (same-named claude.exe) so a running CLI session is not killed.
+Get-Process -Name claude -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "*\WindowsApps\Claude_*" } | Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 
 $grantTargets = @($resources, $enLocale, $zhLocale, $ionI18n, $ionEnLocale, $ionZhLocale, $statsigI18n, $statsigEnLocale, $statsigZhLocale)
