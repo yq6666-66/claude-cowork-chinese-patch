@@ -14,6 +14,31 @@ npm run doctor
 npm run install-patch
 ```
 
+## 找不到 Claude Desktop 安装目录
+
+先确认 Store 包路径：
+
+```powershell
+Get-AppxPackage -Name Claude | Select-Object Name,Version,InstallLocation
+```
+
+如果能看到 `InstallLocation`，但 `npm run locate` 仍失败，手动指定 `app` 子目录：
+
+```powershell
+$env:COWORK_ZH_APP_DIR="C:\Program Files\WindowsApps\Claude_当前版本_x64__pzs8sxrjxfjjc\app"
+npm run install-patch
+npm run doctor
+```
+
+如果失败原因是 `PowerShell process lookup failed`、`AppxPackage lookup failed` 或 `ETIMEDOUT`，可以放宽定位命令超时：
+
+```powershell
+$env:COWORK_ZH_LOCATE_TIMEOUT_MS="30000"
+npm run locate
+```
+
+`COWORK_ZH_APP_DIR` 的优先级高于自动探测，适合 Claude 更新后目录名已变化但自动定位暂时不可用的情况。
+
 ## 无法启动 Claude 的工作区 / RPC pipe closed
 
 如果错误里出现：

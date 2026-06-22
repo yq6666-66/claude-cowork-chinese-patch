@@ -61,6 +61,21 @@ npm run install-patch -- --force-unsafe-asar
 
 危险模式会额外解包 `app.asar`、注入运行时翻译器、重新打包、计算 ASAR header hash 并写回 `Claude.exe`。当前需要工作区功能时不建议使用。
 
+如果自动定位失败，但你知道 Claude 的实际安装目录，可以手动指定。WindowsApps 版通常类似：
+
+```powershell
+$env:COWORK_ZH_APP_DIR="C:\Program Files\WindowsApps\Claude_1.11847.5.0_x64__pzs8sxrjxfjjc\app"
+npm run install-patch
+npm run doctor
+```
+
+如果错误里出现进程查询或 Appx 查询超时，可以临时放宽定位超时：
+
+```powershell
+$env:COWORK_ZH_LOCATE_TIMEOUT_MS="30000"
+npm run locate
+```
+
 ## 5. 验证
 
 Claude 重启后检查：
@@ -162,7 +177,20 @@ npm run validate
 C:\Program Files\WindowsApps\Claude_*__pzs8sxrjxfjjc\app
 ```
 
-也会尝试用户级安装目录。若仍失败，请确认 Claude Desktop 已安装并能正常启动。
+也会尝试正在运行的 `Claude.exe`、`Get-AppxPackage`、用户级安装目录和卸载注册表。若仍失败，请确认 Claude Desktop 已安装并能正常启动。
+
+可以用 PowerShell 查当前 Store 包路径：
+
+```powershell
+Get-AppxPackage -Name Claude | Select-Object Name,Version,InstallLocation
+```
+
+然后手动指定：
+
+```powershell
+$env:COWORK_ZH_APP_DIR="上一步 InstallLocation 后面追加 \app"
+npm run install-patch
+```
 
 ### Integrity check failed
 

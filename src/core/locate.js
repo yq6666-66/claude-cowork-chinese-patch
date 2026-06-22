@@ -5,6 +5,7 @@ const { execFileSync } = require("child_process");
 const asarOps = require("./asar");
 
 const DEFAULT_WINDOWS_APPS_ROOT = "C:\\Program Files\\WindowsApps";
+const DEFAULT_COMMAND_TIMEOUT_MS = 15000;
 
 function sha256(filePath) {
   return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
@@ -149,10 +150,14 @@ function parseCommandLines(output) {
 
 function runCommand(command, args, options = {}) {
   const runner = options.execFileSync || execFileSync;
+  const env = options.env || process.env;
+  const configuredTimeout = Number(options.commandTimeoutMs || env.COWORK_ZH_LOCATE_TIMEOUT_MS || DEFAULT_COMMAND_TIMEOUT_MS);
+  const timeout = Number.isFinite(configuredTimeout) && configuredTimeout > 0 ? configuredTimeout : DEFAULT_COMMAND_TIMEOUT_MS;
+
   return runner(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
-    timeout: 5000,
+    timeout,
     windowsHide: true,
   });
 }
@@ -225,6 +230,31 @@ function registryCandidates(options = {}) {
   }
 }
 
+function appxPackageCandidates(options = {}) {
+  if (Array.isArray(options.appxInstallLocations)) {
+    return sortCandidates(options.appxInstallLocations);
+  }
+
+  const platform = options.platform || process.platform;
+  if (platform !== "win32") return [];
+
+  const script = [
+    "$packages = Get-AppxPackage -Name Claude -ErrorAction SilentlyContinue;",
+    "if (-not $packages) {",
+    "  $packages = Get-AppxPackage -ErrorAction SilentlyContinue |",
+    "    Where-Object { $_.Name -match 'Claude|Anthropic' -or $_.PackageFamilyName -match 'Claude|Anthropic|pzs8sxrjxfjjc' };",
+    "}",
+    "$packages | Where-Object { $_.InstallLocation } | Select-Object -ExpandProperty InstallLocation",
+  ].join(" ");
+
+  try {
+    return sortCandidates(parseCommandLines(runCommand("powershell.exe", ["-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script], options)));
+  } catch (error) {
+    record(options.errors, "AppxPackage", null, `AppxPackage lookup failed: ${error.message}`);
+    return [];
+  }
+}
+
 function locateClaude(options = {}) {
   const env = options.env || process.env;
   const errors = [];
@@ -234,6 +264,7 @@ function locateClaude(options = {}) {
     { name: "explicitDir", enabled: Boolean(options.explicitDir), candidates: () => [options.explicitDir] },
     { name: "COWORK_ZH_APP_DIR", enabled: Boolean(env.COWORK_ZH_APP_DIR), candidates: () => [env.COWORK_ZH_APP_DIR] },
     { name: "running-process", enabled: true, candidates: () => runningProcessCandidates(strategyOptions) },
+    { name: "AppxPackage", enabled: true, candidates: () => appxPackageCandidates(strategyOptions) },
     { name: "WindowsApps", enabled: true, candidates: () => windowsAppsCandidates(strategyOptions) },
     { name: "LOCALAPPDATA\\Programs", enabled: true, candidates: () => localAppDataCandidates(strategyOptions) },
     { name: "registry", enabled: true, candidates: () => registryCandidates(strategyOptions) },
@@ -273,6 +304,7 @@ function locateClaude(options = {}) {
 
 module.exports = {
   appInfo,
+  appxPackageCandidates,
   locateClaude,
   registryCandidates,
   runningProcessCandidates,

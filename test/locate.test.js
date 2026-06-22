@@ -29,6 +29,7 @@ function quietOptions(extra = {}) {
     env: {},
     localAppData: null,
     processPaths: [],
+    appxInstallLocations: [],
     registryInstallLocations: [],
     windowsAppsRoot: null,
     ...extra,
@@ -67,6 +68,40 @@ test("WindowsApps lookup accepts any publisher suffix", async () => {
 
   expect(info.appDir).toBe(path.resolve(appDir));
   expect(info.version).toBe("1.2.3.0");
+});
+
+test("AppxPackage lookup accepts Windows Store install root", async () => {
+  const root = tempDir("claude-zh-locate-appx-");
+  const installRoot = path.join(root, "Claude_1.11847.5.0_x64__pzs8sxrjxfjjc");
+  const appDir = path.join(installRoot, "app");
+  await createClaudeApp(appDir);
+
+  const info = locateClaude(quietOptions({ appxInstallLocations: [installRoot] }));
+
+  expect(info.appDir).toBe(path.resolve(appDir));
+  expect(info.version).toBe("1.11847.5.0");
+});
+
+test("command timeout can be configured for slow Windows lookup commands", () => {
+  const calls = [];
+
+  expect(() =>
+    locateClaude({
+      ...quietOptions({
+        processPaths: null,
+        appxInstallLocations: null,
+      }),
+      platform: "win32",
+      commandTimeoutMs: 22000,
+      execFileSync(command, args, options) {
+        calls.push({ command, args, timeout: options.timeout });
+        throw new Error("simulated timeout");
+      },
+    })
+  ).toThrow(/Cannot find Claude Desktop installation/);
+
+  expect(calls.length).toBeGreaterThan(0);
+  expect(calls.every((entry) => entry.timeout === 22000)).toBe(true);
 });
 
 test("LOCALAPPDATA Programs lookup finds non-Store installs", async () => {

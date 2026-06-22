@@ -14,7 +14,7 @@
 
 - 当前版本：`2.0.3`
 - 主要支持：Microsoft Store / WindowsApps 版 Claude Desktop / Cowork
-- 已实机验证：Claude `1.11187.4.0`
+- 已实机验证：Claude `1.11187.4.0`、`1.11847.5.0`
 - 词表覆盖：`translations/zh-CN/` 分域词表，`810` 条词典项，`34` 条正则规则
 - 自动化检查：Vitest、发布校验、词表覆盖率、GitHub Actions CI
 
@@ -37,6 +37,21 @@ doctor: 健康 / workspace-safe external locale patch is installed
 | 恢复原版 | `npm run restore` | 从最近一次备份恢复 | Claude 无法启动、工作区异常、需要回到官方文件 | 需要备份记录和备份文件完整 |
 
 建议优先使用默认安全模式。这个模式不会重写 `Claude.exe`，也不会把运行时脚本注入到 `ion-dist/assets/v1/index-*.js`，因此不会因为补丁本身删除插件、Skills 或破坏工作区启动链路。
+
+## 汉化原理速览
+
+本项目不调用在线翻译，也不分发 Claude 原始资源。默认安全模式只做本地文件替换：
+
+```text
+Claude 外置 i18n JSON
+  -> 读取 translations/zh-CN/ 分域词典
+  -> 完整句匹配 / 正则规则 / 短片段替换
+  -> 保留 Claude、MCP、GitHub、API 等保护词
+  -> 写回本机 resources/en-US.json 和 ion-dist/i18n/en-US.json
+  -> Claude 重启后按原机制加载中文化后的 JSON
+```
+
+危险完整注入模式才会修改 `app.asar`：它把一个运行时 DOM 翻译器写入 Claude 前端 bundle，页面加载后扫描文本节点、按钮属性和 placeholder 等可见文案。覆盖面更高，但必须同步修改 `Claude.exe` 中的 ASAR header hash，当前会破坏 WindowsApps 版 Claude 的签名校验链路。
 
 ## 功能亮点
 
@@ -73,6 +88,21 @@ C:\Program Files\WindowsApps\Claude_*__pzs8sxrjxfjjc\app
 ```powershell
 npm run locate
 npm run inspect-bundle
+```
+
+如果自动定位因为 WindowsApps 权限、进程查询过慢或新版安装目录变化而失败，可以手动指定目录：
+
+```powershell
+$env:COWORK_ZH_APP_DIR="C:\Program Files\WindowsApps\Claude_当前版本_x64__pzs8sxrjxfjjc\app"
+npm run install-patch
+npm run doctor
+```
+
+慢机器或 WindowsApps 查询较慢时，可以放宽定位命令超时：
+
+```powershell
+$env:COWORK_ZH_LOCATE_TIMEOUT_MS="30000"
+npm run locate
 ```
 
 ## 使用前准备
@@ -120,6 +150,7 @@ npm run check-env       # 无损环境检查，不修改 Claude
 npm run install-patch   # 安装安全中文补丁，只更新外置 i18n JSON，不修改 Claude.exe/app.asar
 npm run doctor          # 检查当前补丁状态
 npm run restore         # 从最近一次备份恢复原版
+npm run make-launcher   # 在桌面创建「Claude 中文」智能启动器快捷方式(可选)
 npm run inspect-bundle  # 只读检查真实 app.asar 的 bundle 结构和注入点
 npm run collect-missing # 提取运行时采集到的未命中文案
 npm run coverage        # 查看词表覆盖率概览
@@ -190,6 +221,7 @@ npm run install-patch -- --force-unsafe-asar
 │   ├── pipeline/      # install、doctor 等流程编排
 │   └── translate/     # 翻译引擎、词表加载、coverage、missing 过滤
 ├── scripts/           # PowerShell 入口和兼容 CLI
+├── launcher/          # 智能汉化启动器(桌面快捷方式 + 无窗口启动 exe 源码)
 ├── translations/
 │   ├── zh-CN.json     # 旧版兼容词表
 │   └── zh-CN/         # v2 分域词表、规则和保护词
@@ -266,6 +298,20 @@ node_modules/
 %USERPROFILE%\.claude-cowork-zh-patch\
 ```
 
+## 智能汉化启动器(可选)
+
+`launcher/` 提供一个**桌面快捷方式**:双击即打开 Claude;若 Claude 自动更新导致汉化失效,会**自动重新汉化**后再打开,省去每次更新后手动跑 `npm run install-patch`。
+
+创建快捷方式:
+
+```powershell
+npm run make-launcher
+```
+
+它会在桌面创建「Claude 中文」快捷方式。若本机有 .NET Framework 的 `csc.exe`,会编译一个无窗口启动器(零闪窗);否则回退为 `powershell -WindowStyle Hidden`(启动时极轻微一闪)。双击逻辑:先用 `doctor` 只读检查汉化是否健康(退出码判断,不弹 UAC),健康就直接启动 Claude;失效则调用默认安全模式 `scripts/install.ps1` 重新汉化(弹 UAC)后再启动。
+
+详见 [launcher/README.md](launcher/README.md)。
+
 ## Claude 更新后怎么办
 
 Claude 自动更新后，WindowsApps 目录通常会变成新版本，旧补丁不会自动迁移。处理顺序：
@@ -315,6 +361,7 @@ npm run restore
 
 ## 更多文档
 
+- [智能汉化启动器](launcher/README.md)
 - [详细使用教程](docs/USAGE.md)
 - [功能覆盖范围](docs/FEATURES.md)
 - [架构说明](docs/ARCHITECTURE.md)

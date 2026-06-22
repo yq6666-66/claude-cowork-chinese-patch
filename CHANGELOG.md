@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- 新增 `launcher/` 智能汉化启动器:桌面「Claude 中文」快捷方式,双击打开 Claude;Claude 自动更新导致汉化失效时,先用 `doctor` 检测再调用安全模式 `install.ps1` 重新汉化后启动。提供无窗口启动 exe(零闪窗,`launcher.cs` 经 `csc` 编译)与 `powershell -WindowStyle Hidden` 回退;`npm run make-launcher` 一键创建。
+- 安装/恢复脚本停止 Claude 进程时只针对 WindowsApps 桌面端,放过 npm 安装的 Claude Code CLI(同名 `claude.exe`),避免误杀正在运行的 CLI 会话。
+- 定位逻辑新增 `Get-AppxPackage` 回退，优先处理 Microsoft Store / WindowsApps 版 Claude 的安装目录。
+- 将外部定位命令默认超时从 5 秒提高到 15 秒，并支持 `COWORK_ZH_LOCATE_TIMEOUT_MS` 覆盖，减少慢机器或新版 WindowsApps 查询时误报找不到 Claude。
+- README、使用教程、架构说明和故障排查补充安全模式翻译原理、危险完整注入边界、`COWORK_ZH_APP_DIR` 手动路径和定位超时说明。
+
 ## 2.0.3
 
 - 默认安装切换为 workspace-safe external locale 模式，更新 `resources/en-US.json`、`resources/zh-CN.json`（如果存在）以及 `resources/ion-dist/i18n` 下可发现的外置前端 i18n JSON，不再修改 `Claude.exe` 或 `resources/app.asar`。

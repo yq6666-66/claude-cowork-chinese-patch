@@ -35,13 +35,13 @@ npm run coverage
 ## 收集遗漏文案
 
 ```powershell
-$env:CLAUDE_ZH_COLLECT_MISSING="1"
+$env:COWORK_ZH_COLLECT="1"
 npm run install-patch -- --force-unsafe-asar
 npm run collect-missing
 npm run coverage
 ```
 
-采集依赖运行时翻译器注入，属于危险完整 ASAR 模式。采集完成后，如需继续使用 Claude 工作区，请先 `npm run restore`，再运行默认 `npm run install-patch`。
+采集依赖运行时翻译器注入，属于危险完整 ASAR 模式。`CLAUDE_ZH_COLLECT_MISSING` 仍兼容旧脚本，但新文档统一使用 `COWORK_ZH_COLLECT`。采集完成后，如需继续使用 Claude 工作区，请先 `npm run restore`，再运行默认 `npm run install-patch`。
 
 `translations/_missing.json` 仅用于本地补词，已被 `.gitignore` 忽略。确认译文后，把词条移动到对应分域 JSON。
 
