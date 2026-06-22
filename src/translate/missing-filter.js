@@ -48,7 +48,7 @@ function shouldSkipMissing(text) {
   if (/^(?:[A-Z]:\\|https?:\/\/|file:\/\/)/i.test(value)) return true;
   if (/[A-Z]:\\/.test(value)) return true;
   if (/^claude-(?:opus|sonnet|haiku)-[\w-]+$/i.test(value)) return true;
-  if (/^(?:Claude|Anthropic|Opus|Sonnet|Haiku|MCP|API|URL|GitHub|C3|Anthropic Sans|Anthropic Serif|Claude Light|Claude Dark|Control\+Alt\+Space|Ctrl\+B|e\.g\. JetBrains Mono|Python|Node\.js|Reference_codex_config|User_profile|claude|claude chinese|context|consolidate-memory|setup-cowork|schedule|locate)$/i.test(value)) return true;
+  if (/^(?:Claude|Anthropic|Opus|Sonnet|Haiku|MCP|API|URL|GitHub|C3|Anthropic Sans|Anthropic Serif|Claude Light|Claude Dark|Control\+Alt\+Space|Ctrl\+B|e\.g\. JetBrains Mono|Python|Node\.js|claude|context|schedule|locate)$/i.test(value)) return true;
 
   if (/^[A-Za-z0-9_. -]+[。、，：；]$/.test(value)) return true;
   if (/[✓✗✅]/u.test(value) && /\b(?:Connected|Failed to connect)\b/i.test(value)) return true;

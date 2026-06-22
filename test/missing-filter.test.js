@@ -7,7 +7,7 @@ test("filters private command and API noise from missing collection", () => {
     "{ \"message\": \"Bad credentials\", \"documentation_url\":",
     "events_url\":",
     "login\": \"user\", \"id\": 1, \"avatar_url\":",
-    "goals_1.sqlite-wal",
+    "data_1.sqlite-wal",
     "server.mjs",
     "styles.css",
     "Read server.mjs",
