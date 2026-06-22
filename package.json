@@ -12,6 +12,7 @@
     "install-patch": "powershell -ExecutionPolicy Bypass -File scripts/install.ps1",
     "check-env": "powershell -ExecutionPolicy Bypass -File scripts/check-environment.ps1",
     "restore": "powershell -ExecutionPolicy Bypass -File scripts/restore.ps1",
+    "make-launcher": "powershell -ExecutionPolicy Bypass -File launcher/build-shortcut.ps1",
     "doctor": "node scripts/doctor.cjs",
     "locate": "node scripts/locate-doctor.cjs",
     "inspect-bundle": "node scripts/inspect-bundle.cjs",

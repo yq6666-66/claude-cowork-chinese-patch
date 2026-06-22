@@ -11,3 +11,8 @@ backups/
 logs/
 .claude-cowork-zh-patch/
 *.tmp
+
+# launcher generated artifacts (built locally by launcher/build-shortcut.ps1)
+launcher/claude.ico
+launcher/claude-zh-launcher.exe
+launcher/launcher.log
