@@ -12,9 +12,9 @@
 
 ## 当前状态
 
-- 当前版本：`2.0.3`
+- 当前版本：`2.0.4`
 - 主要支持：Microsoft Store / WindowsApps 版 Claude Desktop / Cowork
-- 已实机验证：Claude `1.11187.4.0`、`1.11847.5.0`
+- 已实机验证：Claude `1.11187.4.0`、`1.11847.5.0`、`1.14271.0.0`
 - 词表覆盖：`translations/zh-CN/` 分域词表，`810` 条词典项，`34` 条正则规则
 - 自动化检查：Vitest、发布校验、词表覆盖率、GitHub Actions CI
 

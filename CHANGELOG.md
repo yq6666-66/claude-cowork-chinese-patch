@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 2.0.4
 
 - 新增 `launcher/` 智能汉化启动器:桌面「Claude 中文」快捷方式,双击打开 Claude;Claude 自动更新导致汉化失效时,先用 `doctor` 检测再调用安全模式 `install.ps1` 重新汉化后启动。提供无窗口启动 exe(零闪窗,`launcher.cs` 经 `csc` 编译)与 `powershell -WindowStyle Hidden` 回退;`npm run make-launcher` 一键创建。
 - 安装/恢复脚本停止 Claude 进程时只针对 WindowsApps 桌面端,放过 npm 安装的 Claude Code CLI(同名 `claude.exe`),避免误杀正在运行的 CLI 会话。
